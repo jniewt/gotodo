@@ -61,17 +61,33 @@ func (r *Repository) DelList(name string) error {
 	return ErrListNotFound
 }
 
-func (r *Repository) AddItem(list, title string) (Task, error) {
+func (r *Repository) AddItem(list string, task TaskAdd) (Task, error) {
 	l, err := r.getList(list)
 	if err != nil {
 		return Task{}, err
 	}
+
+	if task.Title == "" {
+		return Task{}, fmt.Errorf("missing task title")
+	}
+
 	item := Task{
 		ID:      r.NewID(),
-		Title:   title,
+		Title:   task.Title,
 		List:    list,
 		Created: time.Now(),
 	}
+
+	// set dueOn or dueBy if set
+	switch {
+	case !task.DueBy.IsZero() && !task.DueOn.IsZero():
+		return Task{}, fmt.Errorf("only one of dueOn or dueBy can be set")
+	case !task.DueBy.IsZero():
+		item.DueBy = task.DueBy
+	case !task.DueOn.IsZero():
+		item.DueOn = task.DueOn
+	}
+
 	l.Items = append(l.Items, &item)
 	return item, nil
 }
@@ -175,4 +191,10 @@ func (t Task) MarshalJSON() ([]byte, error) {
 		DueOn:  dueOn,
 		DoneOn: doneOn,
 	})
+}
+
+type TaskAdd struct {
+	Title string    `json:"title"`
+	DueBy time.Time `json:"due_by"`
+	DueOn time.Time `json:"due_on"`
 }

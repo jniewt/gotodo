@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -47,7 +48,13 @@ func main() {
 }
 
 func addTestData(repo *gotasks.Repository) {
-	tasks := []string{"Buy avocados", "Walk the cat", "Write task app", "Learn JS"}
+	//tasks := []gotasks.TaskAdd{"Buy avocados", "Walk the cat", "Write task app", "Learn JS"}
+	tasks := []gotasks.TaskAdd{
+		{Title: "Buy avocados"},
+		{Title: "Walk the cat", DueOn: time.Now().Add(2 * time.Hour)},
+		{Title: "Write task app", DueBy: time.Now().Add(24 * time.Hour)},
+		{Title: "Learn JS"},
+	}
 
 	_, err := repo.AddList("home")
 	if err != nil {
@@ -61,7 +68,7 @@ func addTestData(repo *gotasks.Repository) {
 		}
 	}
 
-	tasks = []string{"Write report"}
+	tasks = []gotasks.TaskAdd{{Title: "Write report"}}
 
 	_, err = repo.AddList("work")
 	if err != nil {

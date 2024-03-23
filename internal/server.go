@@ -166,20 +166,13 @@ func (s *Server) handleTaskPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	request := struct {
-		Title string `json:"title"`
-	}{}
+	request := TaskAdd{}
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		s.httpError(w, http.StatusBadRequest, err)
 		return
 	}
 
-	if request.Title == "" {
-		s.httpError(w, http.StatusBadRequest, errors.New("missing task title"))
-		return
-	}
-
-	t, err := s.orga.AddItem(list, request.Title)
+	t, err := s.orga.AddItem(list, request)
 	if err != nil {
 		s.httpError(w, http.StatusBadRequest, err)
 		return
@@ -212,7 +205,7 @@ type Organiser interface {
 	GetList(name string) (List, error)
 	AddList(name string) (List, error)
 	DelList(name string) error
-	AddItem(list, title string) (Task, error)
+	AddItem(list string, item TaskAdd) (Task, error)
 	DelItem(id int) error
 	MarkDone(taskID int, done bool) (Task, error)
 }
