@@ -58,8 +58,8 @@
 </div>
 
 <!-- New Item Modal -->
-<div class="modal fade" id="addItemModal" tabindex="-1" aria-labelledby="addItemModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+<div class="modal fade" id="addItemModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="addItemModalLabel">Add New Task</h5>
@@ -76,6 +76,24 @@
                         <select class="form-select" id="taskListDropdown" required>
                             <!-- Options will be dynamically added here -->
                         </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="dueDateTypeSelect" class="form-label">Due Date</label>
+                        <select class="form-select" id="dueDateTypeSelect">
+                            <option value="none" selected>None</option>
+                            <option value="dueOn">Due On</option>
+                            <option value="dueBy">Due By</option>
+                        </select>
+                    </div>
+                    <div class="mb-3 d-none" id="dateTimeOptions">
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="taskAllDayInput" checked>
+                            <label class="form-check-label" for="taskAllDay">All Day</label>
+                        </div>
+                        <div class="mb-3">
+                            <label for="taskDueDateTime" class="form-label">Date</label>
+                            <input type="date" class="form-control" id="taskDueDateTime">
+                        </div>
                     </div>
                 </form>
             </div>

@@ -201,3 +201,37 @@ type TaskAdd struct {
 	DueBy  time.Time `json:"due_by"`
 	DueOn  time.Time `json:"due_on"`
 }
+
+// UnmarshalJSON overwrites JSON unmarshalling to parse time fields properly
+func (t *TaskAdd) UnmarshalJSON(data []byte) error {
+	type Alias TaskAdd
+	aux := struct {
+		DueBy string `json:"due_by"`
+		DueOn string `json:"due_on"`
+		*Alias
+	}{
+		Alias: (*Alias)(t),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	format := "2006-01-02T15:04"
+	if aux.AllDay {
+		format = "2006-01-02"
+	}
+	if aux.DueBy != "" {
+		dueBy, err := time.ParseInLocation(format, aux.DueBy, time.Local)
+		if err != nil {
+			return err
+		}
+		t.DueBy = dueBy
+	}
+	if aux.DueOn != "" {
+		dueOn, err := time.ParseInLocation(format, aux.DueOn, time.Local)
+		if err != nil {
+			return err
+		}
+		t.DueOn = dueOn
+	}
+	return nil
+}

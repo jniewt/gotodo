@@ -302,6 +302,26 @@ document.getElementById('addItemModal').addEventListener('show.bs.modal', functi
     titleInput.focus();
 });
 
+document.getElementById('addItemModal').addEventListener('hidden.bs.modal', function() {
+    // Reset the due date type to 'None'
+    document.getElementById('dueDateTypeSelect').value = 'none';
+
+    // Hide the date/time options section
+    document.getElementById('dateTimeOptions').classList.add('d-none');
+
+    // Reset and check the 'All Day' checkbox
+    const allDayCheckbox = document.getElementById('taskAllDayInput');
+    allDayCheckbox.checked = true;
+    allDayCheckbox.dispatchEvent(new Event('change')); // Trigger change event to adjust the UI accordingly
+
+    // Clear the date/time input
+    document.getElementById('taskDueDateTime').value = '';
+
+    // Reset the title input
+    document.getElementById('taskTitleInput').value = '';
+
+});
+
 document.getElementById('deleteTask').addEventListener('click', function() {
     // Use taskContextMenu's dataset since the deleteTask li doesn't have its own dataset
     const taskId = document.getElementById('taskContextMenu').dataset.taskId;
@@ -313,10 +333,29 @@ document.getElementById('deleteTask').addEventListener('click', function() {
 document.getElementById('saveTaskButton').addEventListener('click', async () => {
     const titleInput = document.getElementById('taskTitleInput');
     const listDropdown = document.getElementById('taskListDropdown');
+    const dueDateTypeSelect = document.getElementById('dueDateTypeSelect');
+    const allDayCheckbox = document.getElementById('taskAllDayInput');
+    const dueDateTimeInput = document.getElementById('taskDueDateTime');
+
     const title = titleInput.value;
     const listName = listDropdown.value;
+    const dueDateType = dueDateTypeSelect.value;
+    const isAllDay = allDayCheckbox.checked;
+    const dueDateTime = dueDateTimeInput.value;
 
-    const requestPayload = { title: title };
+    // Initialize the request payload with title and all_day
+    let requestPayload = {
+        title: title,
+    };
+
+    // Conditionally add dueOn or dueBy based on the dropdown selection
+    if (dueDateType === 'dueOn') {
+        requestPayload.due_on = dueDateTime;
+        requestPayload.all_day = isAllDay;
+    } else if (dueDateType === 'dueBy') {
+        requestPayload.due_by = dueDateTime;
+        requestPayload.all_day = isAllDay;
+    }
 
     try {
         const response = await fetch(`/api/list/${listName}`, {
@@ -327,15 +366,16 @@ document.getElementById('saveTaskButton').addEventListener('click', async () => 
             body: JSON.stringify(requestPayload),
         });
 
+        const data = await response.json();
+
         if (response.ok) {
-            const data = await response.json();
             console.log('Task added:', data.task);
-            // Reload or update the task list display here
-            fetchListDetails(listName); // Assuming fetchListDetails is a function that fetches and displays the tasks for a list
+            fetchListDetails(listName); // Refresh the task list
             bootstrap.Modal.getInstance(document.getElementById('addItemModal')).hide(); // Hide the modal
             showAlert('Task added successfully', 'success');
         } else {
             console.error('Failed to add task');
+            showAlert(`Failed to add the task: ${data.error}`); // Show error alert
         }
     } catch (error) {
         console.error('Error adding task:', error);
@@ -415,6 +455,59 @@ document.getElementById('listItems').addEventListener('click', function(event) {
         taskDetailsModal.show();
     }
 });
+
+document.getElementById('dueDateTypeSelect').addEventListener('change', function() {
+    const dateTimeOptions = document.getElementById('dateTimeOptions');
+    const dueDateTimeInput = document.getElementById('taskDueDateTime');
+    const allDayCheckbox = document.getElementById('taskAllDayInput');
+
+    if (this.value === 'none') {
+        dateTimeOptions.classList.add('d-none');
+    } else {
+        // Remove 'd-none' to show the options
+        dateTimeOptions.classList.remove('d-none');
+        // Check the 'All Day' checkbox by default
+        allDayCheckbox.checked = true;
+
+        // Determine today's date
+        const today = new Date();
+        const todayFormattedDate = today.toISOString().split('T')[0];
+        const todayFormattedDateTime = todayFormattedDate + 'T' + today.toTimeString().split(' ')[0];
+        // Set the input value to today, adjusting format based on 'All Day'
+        dueDateTimeInput.value = allDayCheckbox.checked ? todayFormattedDate : todayFormattedDateTime;
+        // Since 'All Day' is checked by default, set type to 'date'
+        dueDateTimeInput.type = 'date';
+    }
+});
+
+document.getElementById('taskAllDayInput').addEventListener('change', function() {
+    const dueDateTimeInput = document.getElementById('taskDueDateTime');
+    if (this.checked) {
+        // Change the input type to 'date', removing the time part but keeping the date
+        const currentValue = dueDateTimeInput.value;
+        if (currentValue) {
+            const datePart = currentValue.includes('T') ? currentValue.split('T')[0] : currentValue;
+            dueDateTimeInput.type = 'date';
+            dueDateTimeInput.value = datePart; // Keep the previously selected date
+        } else {
+            // If there was no previous value, simply switch to date input
+            dueDateTimeInput.type = 'date';
+        }
+    } else {
+        // When unchecking 'All Day', enable time selection without resetting the date
+        const currentValue = dueDateTimeInput.value;
+        dueDateTimeInput.type = 'datetime-local';
+        if (currentValue && !currentValue.includes('T')) {
+            // If there's already a date but no time, append a default time part to it
+            // This ensures the input value format matches 'datetime-local' requirements
+            dueDateTimeInput.value = `${currentValue}T00:00`; // Default to midnight
+        }
+        // Note: If there was already a datetime value, changing the input type back to 'datetime-local'
+        // will naturally preserve it, so there's no need to explicitly set it again.
+    }
+});
+
+
 
 function sortItems(items, sortStrategy) {
     return items.sort(sortStrategy);
