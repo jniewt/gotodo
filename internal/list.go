@@ -75,6 +75,7 @@ func (r *Repository) AddItem(list string, task TaskAdd) (Task, error) {
 		ID:      r.NewID(),
 		Title:   task.Title,
 		List:    list,
+		AllDay:  task.AllDay,
 		Created: time.Now(),
 	}
 
@@ -161,6 +162,7 @@ type Task struct {
 	Title   string    `json:"title"`
 	List    string    `json:"list"`
 	Done    bool      `json:"done"`
+	AllDay  bool      `json:"all_day"`
 	DueBy   time.Time `json:"due_by,omitempty"`
 	DueOn   time.Time `json:"due_on,omitempty"`
 	Created time.Time `json:"created"`
@@ -194,7 +196,8 @@ func (t Task) MarshalJSON() ([]byte, error) {
 }
 
 type TaskAdd struct {
-	Title string    `json:"title"`
-	DueBy time.Time `json:"due_by"`
-	DueOn time.Time `json:"due_on"`
+	Title  string    `json:"title"`
+	AllDay bool      `json:"all_day"`
+	DueBy  time.Time `json:"due_by"`
+	DueOn  time.Time `json:"due_on"`
 }

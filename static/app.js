@@ -41,58 +41,6 @@ async function fetchAllLists() {
 
 fetchAllLists(); // Call the function to fetch lists when the page loads
 
-async function deleteList(listName) {
-    try {
-        // Fetch list details first to check if it has items
-        const responseDetails = await fetch(`/api/list/${listName}`);
-        const listDetails = await responseDetails.json();
-
-        // Check if list is not empty
-        if (listDetails.list.items && listDetails.list.items.length > 0) {
-            // Ask for confirmation
-            const isConfirmed = confirm(`The list "${listName}" is not empty. Are you sure you want to delete it?`);
-            if (!isConfirmed) {
-                return; // Stop if user does not confirm
-            }
-        }
-
-        // Proceed with deletion if list is empty or user confirmed
-        const responseDelete = await fetch(`/api/list/${listName}`, {
-            method: 'DELETE',
-        });
-        if (responseDelete.ok) {
-            alert('List deleted successfully.');
-            fetchAllLists(); // Refresh the lists display
-            showAlert('List deleted successfully', 'success')
-        } else {
-            console.error('Failed to delete list');
-            const errorResponse = await responseDelete.json(); // Assuming the server responds with JSON
-            const errorMessage = errorResponse.error || 'An unexpected error occurred'; // Fallback error message
-            showAlert(`Failed to delete list: ${errorMessage}`); // Show the error from the server
-        }
-    } catch (error) {
-        console.error('Failed to delete list:', error);
-        showAlert(`Failed to delete list: ${error.message}`, 'danger'); // Show the error from the catch block
-    }
-}
-
-async function fetchListDetails(listName) {
-    console.log(`Fetching details for list: ${listName}`);
-    try {
-        const response = await fetch(`/api/list/${listName}`);
-        if (!response.ok) {
-            throw new Error('Failed to fetch list details');
-        }
-        const listDetails = await response.json();
-        console.log('List details fetched:', listDetails);
-
-        displayListDetails(listDetails.list); // Assuming you have a function to display these details
-    } catch (error) {
-        console.error('Error fetching list details:', error);
-    }
-}
-
-
 function displayListDetails(list) {
     const listDetailsEl = document.getElementById('listItems');
     listDetailsEl.setAttribute('data-current-list', list.name); // Store the current list name in the container
@@ -114,6 +62,7 @@ function displayListDetails(list) {
             itemEl.setAttribute('data-list', list.name);
             itemEl.setAttribute('data-done', item.done);
             itemEl.setAttribute('data-created', item.created);
+            itemEl.setAttribute('data-all-day', item.all_day);
             itemEl.setAttribute('data-due-on', item.due_on || '');
             itemEl.setAttribute('data-due-by', item.due_by || '');
             itemEl.setAttribute('data-done-on', item.done_on || '')
@@ -156,6 +105,104 @@ function displayListDetails(list) {
 
     document.body.appendChild(addButton); // Append to body to ensure fixed positioning relative to viewport
 
+}
+
+async function createList(listName) {
+    try {
+        const response = await fetch('/api/list', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name: listName }),
+        });
+        if (response.ok) {
+            fetchAllLists(); // Refresh the lists to include the new list
+            showAlert('List created successfully', 'success')
+        } else {
+            console.error('Failed to create list');
+            const errorResponse = await response.json(); // Assuming the server responds with JSON
+            const errorMessage = errorResponse.error || 'An unexpected error occurred'; // Fallback error message
+            showAlert(`Failed to create list: ${errorMessage}`); // Show the error from the server
+
+        }
+    } catch (error) {
+        console.error('Failed to create list:', error);
+        showAlert(`Failed to create list: ${error.message}`, 'danger'); // Show the error from the catch block
+    }
+}
+
+async function deleteList(listName) {
+    try {
+        // Fetch list details first to check if it has items
+        const responseDetails = await fetch(`/api/list/${listName}`);
+        const listDetails = await responseDetails.json();
+
+        // Check if list is not empty
+        if (listDetails.list.items && listDetails.list.items.length > 0) {
+            // Ask for confirmation
+            const isConfirmed = confirm(`The list "${listName}" is not empty. Are you sure you want to delete it?`);
+            if (!isConfirmed) {
+                return; // Stop if user does not confirm
+            }
+        }
+
+        // Proceed with deletion if list is empty or user confirmed
+        const responseDelete = await fetch(`/api/list/${listName}`, {
+            method: 'DELETE',
+        });
+        if (responseDelete.ok) {
+            alert('List deleted successfully.');
+            fetchAllLists(); // Refresh the lists display
+            showAlert('List deleted successfully', 'success')
+        } else {
+            console.error('Failed to delete list');
+            const errorResponse = await responseDelete.json(); // Assuming the server responds with JSON
+            const errorMessage = errorResponse.error || 'An unexpected error occurred'; // Fallback error message
+            showAlert(`Failed to delete list: ${errorMessage}`); // Show the error from the server
+        }
+    } catch (error) {
+        console.error('Failed to delete list:', error);
+        showAlert(`Failed to delete list: ${error.message}`, 'danger'); // Show the error from the catch block
+    }
+}
+
+async function deleteTask(taskId) {
+    try {
+        const response = await fetch(`/api/items/${taskId}`, { method: 'DELETE' });
+        if (response.ok) {
+            // Remove the task from the list or refresh the list
+            console.log('Task deleted successfully');
+            const listDetailsEl = document.getElementById('listItems');
+            const listName = listDetailsEl.getAttribute('data-current-list');
+            fetchListDetails(listName); // Assuming this function refreshes the task list
+            showAlert('Task deleted successfully', 'success')
+        } else {
+            console.error('Failed to delete task');
+            const errorResponse = await response.json(); // Assuming the server responds with JSON
+            const errorMessage = errorResponse.error || 'An unexpected error occurred'; // Fallback error message
+            showAlert(`Failed to delete task: ${errorMessage}`); // Show the error from the server
+        }
+    } catch (error) {
+        console.error('Error deleting task:', error);
+        showAlert(`Failed to delete the task: ${error.message}`); // Show the error from the catch block
+    }
+}
+
+async function fetchListDetails(listName) {
+    console.log(`Fetching details for list: ${listName}`);
+    try {
+        const response = await fetch(`/api/list/${listName}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch list details');
+        }
+        const listDetails = await response.json();
+        console.log('List details fetched:', listDetails);
+
+        displayListDetails(listDetails.list); // Assuming you have a function to display these details
+    } catch (error) {
+        console.error('Error fetching list details:', error);
+    }
 }
 
 async function populateListDropdown() {
@@ -219,7 +266,6 @@ function handleCheckboxChange(list, itemId, isChecked, itemElement) {
     }, { once: true });
 }
 
-
 document.getElementById('newListForm').addEventListener('submit', async function(event) {
     event.preventDefault();
     const listName = document.getElementById('listNameInput').value;
@@ -263,7 +309,6 @@ document.getElementById('deleteTask').addEventListener('click', function() {
         deleteTask(taskId); // Implement this function to delete the task
     }
 });
-
 
 document.getElementById('saveTaskButton').addEventListener('click', async () => {
     const titleInput = document.getElementById('taskTitleInput');
@@ -343,16 +388,18 @@ document.getElementById('listItems').addEventListener('click', function(event) {
         document.getElementById('taskList').textContent = taskItem.getAttribute('data-list');
         document.getElementById('taskStatus').textContent = taskItem.getAttribute('data-done') === 'true' ? 'Done' : 'Not Done';
         document.getElementById('taskCreated').textContent = formatDate(taskItem.getAttribute('data-created'));
+        document.getElementById('taskAllDay').textContent = taskItem.getAttribute('data-all-day') === 'true' ? 'Yes' : 'No';
 
         // Conditionally populate and display the "Due On" and "Due By" fields
+        const allDay = taskItem.getAttribute('data-all-day') === 'true';
         const dueOn = taskItem.getAttribute('data-due-on');
         const dueBy = taskItem.getAttribute('data-due-by');
 
-        document.getElementById('taskDueOn').textContent = dueOn ? formatDate(dueOn) : '';
+        document.getElementById('taskDueOn').textContent = dueOn ? formatDateHumanReadable(dueOn, allDay) : '';
         document.getElementById('taskDueOn').style.display = dueOn ? 'block' : 'none';
         document.getElementById('taskDueOnLabel').style.display = dueOn ? 'block' : 'none';
 
-        document.getElementById('taskDueBy').textContent = dueBy ? formatDate(dueBy) : '';
+        document.getElementById('taskDueBy').textContent = dueBy ? formatDateHumanReadable(dueBy, allDay) : '';
         document.getElementById('taskDueBy').style.display = dueBy ? 'block' : 'none';
         document.getElementById('taskDueByLabel').style.display = dueBy ? 'block' : 'none';
 
@@ -368,55 +415,6 @@ document.getElementById('listItems').addEventListener('click', function(event) {
         taskDetailsModal.show();
     }
 });
-
-
-async function deleteTask(taskId) {
-    try {
-        const response = await fetch(`/api/items/${taskId}`, { method: 'DELETE' });
-        if (response.ok) {
-            // Remove the task from the list or refresh the list
-            console.log('Task deleted successfully');
-            const listDetailsEl = document.getElementById('listItems');
-            const listName = listDetailsEl.getAttribute('data-current-list');
-            fetchListDetails(listName); // Assuming this function refreshes the task list
-            showAlert('Task deleted successfully', 'success')
-        } else {
-            console.error('Failed to delete task');
-            const errorResponse = await response.json(); // Assuming the server responds with JSON
-            const errorMessage = errorResponse.error || 'An unexpected error occurred'; // Fallback error message
-            showAlert(`Failed to delete task: ${errorMessage}`); // Show the error from the server
-        }
-    } catch (error) {
-        console.error('Error deleting task:', error);
-        showAlert(`Failed to delete the task: ${error.message}`); // Show the error from the catch block
-    }
-}
-
-
-async function createList(listName) {
-    try {
-        const response = await fetch('/api/list', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ name: listName }),
-        });
-        if (response.ok) {
-            fetchAllLists(); // Refresh the lists to include the new list
-            showAlert('List created successfully', 'success')
-        } else {
-            console.error('Failed to create list');
-            const errorResponse = await response.json(); // Assuming the server responds with JSON
-            const errorMessage = errorResponse.error || 'An unexpected error occurred'; // Fallback error message
-            showAlert(`Failed to create list: ${errorMessage}`); // Show the error from the server
-
-        }
-    } catch (error) {
-        console.error('Failed to create list:', error);
-        showAlert(`Failed to create list: ${error.message}`, 'danger'); // Show the error from the catch block
-    }
-}
 
 function sortItems(items, sortStrategy) {
     return items.sort(sortStrategy);
@@ -458,3 +456,58 @@ function formatDate(isoDateString) {
     const date = new Date(isoDateString);
     return date.toLocaleString(); // Adjust formatting as needed
 }
+
+function formatDateHumanReadable(isoDateString, allDay = false) {
+    if (!isoDateString) return 'N/A'; // Handle null or undefined dates
+
+    const date = new Date(isoDateString);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    // Check if the date is in the current year
+    const isCurrentYear = now.getFullYear() === date.getFullYear();
+
+    // Setting up date options based on whether it's all day and if it's the current year
+    const dateOptions = {
+        month: 'long',
+        day: 'numeric',
+        ...(isCurrentYear ? {} : { year: 'numeric' }), // Add year if it's not the current year
+    };
+
+    // Setting up time options based on whether it's all day
+    const timeOptions = allDay ? {} : {
+        hour: '2-digit',
+        minute: '2-digit',
+    };
+
+    // Formatting date without the time if it's all day
+    if (allDay) {
+        const formattedDate = date.toLocaleDateString('default', dateOptions);
+        if (date.toDateString() === today.toDateString()) {
+            return 'Today';
+        } else if (date.toDateString() === yesterday.toDateString()) {
+            return 'Yesterday';
+        } else if (date.toDateString() === tomorrow.toDateString()) {
+            return 'Tomorrow';
+        } else {
+            return formattedDate;
+        }
+    } else {
+        // Including time in the formatted date
+        const formattedDateTime = date.toLocaleString('default', {...dateOptions, ...timeOptions});
+        if (date.toDateString() === today.toDateString()) {
+            return `Today, ${date.toLocaleTimeString('default', timeOptions)}`;
+        } else if (date.toDateString() === yesterday.toDateString()) {
+            return `Yesterday, ${date.toLocaleTimeString('default', timeOptions)}`;
+        } else if (date.toDateString() === tomorrow.toDateString()) {
+            return `Tomorrow, ${date.toLocaleTimeString('default', timeOptions)}`;
+        } else {
+            return formattedDateTime;
+        }
+    }
+}
+

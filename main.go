@@ -48,9 +48,9 @@ func main() {
 }
 
 func addTestData(repo *gotasks.Repository) {
-	//tasks := []gotasks.TaskAdd{"Buy avocados", "Walk the cat", "Write task app", "Learn JS"}
+	// tasks := []gotasks.TaskAdd{"Buy avocados", "Walk the cat", "Write task app", "Learn JS"}
 	tasks := []gotasks.TaskAdd{
-		{Title: "Buy avocados"},
+		{Title: "Buy avocados", AllDay: true, DueBy: time.Now().Add(48 * time.Hour)},
 		{Title: "Walk the cat", DueOn: time.Now().Add(2 * time.Hour)},
 		{Title: "Write task app", DueBy: time.Now().Add(24 * time.Hour)},
 		{Title: "Learn JS"},
@@ -68,7 +68,7 @@ func addTestData(repo *gotasks.Repository) {
 		}
 	}
 
-	tasks = []gotasks.TaskAdd{{Title: "Write report"}}
+	tasks = []gotasks.TaskAdd{{Title: "Write report"}, {Title: "Prepare presentation", AllDay: true, DueBy: time.Now().Add(72 * time.Hour)}}
 
 	_, err = repo.AddList("work")
 	if err != nil {
