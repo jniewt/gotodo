@@ -268,6 +268,15 @@ function handleCheckboxChange(list, itemId, isChecked, itemElement) {
 
 document.getElementById('newListForm').addEventListener('submit', async function(event) {
     event.preventDefault();
+
+    // validate the form
+    const form = document.getElementById('newListForm');
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    form.classList.add('was-validated');
+
     const listName = document.getElementById('listNameInput').value;
     // Your createList function logic here
     if (listName) {
@@ -292,7 +301,7 @@ document.addEventListener('DOMContentLoaded', () => {
     populateListDropdown();
 });
 
-document.getElementById('addItemModal').addEventListener('show.bs.modal', function (event) {
+document.getElementById('addItemModal').addEventListener('shown.bs.modal', function (event) {
     populateListDropdown();
     // Get the title input field
     const titleInput = document.getElementById('taskTitleInput');
@@ -300,6 +309,10 @@ document.getElementById('addItemModal').addEventListener('show.bs.modal', functi
     // Clear and focus the title input field
     titleInput.value = '';
     titleInput.focus();
+
+    // Preselect the current list in the dropdown
+    const listItemsEl = document.getElementById('listItems');
+    document.getElementById('taskListDropdown').value = listItemsEl.getAttribute('data-current-list');
 });
 
 document.getElementById('addItemModal').addEventListener('hidden.bs.modal', function() {
@@ -331,6 +344,15 @@ document.getElementById('deleteTask').addEventListener('click', function() {
 });
 
 document.getElementById('saveTaskButton').addEventListener('click', async () => {
+
+    // validate the form
+    const form = document.getElementById('addItemForm');
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    form.classList.add('was-validated');
+
     const titleInput = document.getElementById('taskTitleInput');
     const listDropdown = document.getElementById('taskListDropdown');
     const dueDateTypeSelect = document.getElementById('dueDateTypeSelect');
