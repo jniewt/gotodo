@@ -114,6 +114,8 @@ function displayListDetails(list) {
             itemEl.setAttribute('data-list', list.name);
             itemEl.setAttribute('data-done', item.done);
             itemEl.setAttribute('data-created', item.created);
+            itemEl.setAttribute('data-due-on', item.due_on || '');
+            itemEl.setAttribute('data-due-by', item.due_by || '');
             itemEl.setAttribute('data-done-on', item.done_on || '')
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
@@ -342,19 +344,24 @@ document.getElementById('listItems').addEventListener('click', function(event) {
         document.getElementById('taskStatus').textContent = taskItem.getAttribute('data-done') === 'true' ? 'Done' : 'Not Done';
         document.getElementById('taskCreated').textContent = formatDate(taskItem.getAttribute('data-created'));
 
-        // Conditionally format and set the "Done On" date or hide it
-        const isTaskDone = taskItem.getAttribute('data-done') === 'true';
-        const doneOnLabel = document.getElementById('taskDoneOnLabel');
-        const doneOnValue = document.getElementById('taskDoneOn');
+        // Conditionally populate and display the "Due On" and "Due By" fields
+        const dueOn = taskItem.getAttribute('data-due-on');
+        const dueBy = taskItem.getAttribute('data-due-by');
 
-        if (isTaskDone) {
-            doneOnLabel.style.display = 'block'; // Show the "Done On" label
-            doneOnValue.textContent = formatDate(taskItem.getAttribute('data-done-on'));
-            doneOnValue.style.display = 'block'; // Show the "Done On" value
-        } else {
-            doneOnLabel.style.display = 'none'; // Hide the "Done On" label
-            doneOnValue.style.display = 'none'; // Hide the "Done On" value
-        }
+        document.getElementById('taskDueOn').textContent = dueOn ? formatDate(dueOn) : '';
+        document.getElementById('taskDueOn').style.display = dueOn ? 'block' : 'none';
+        document.getElementById('taskDueOnLabel').style.display = dueOn ? 'block' : 'none';
+
+        document.getElementById('taskDueBy').textContent = dueBy ? formatDate(dueBy) : '';
+        document.getElementById('taskDueBy').style.display = dueBy ? 'block' : 'none';
+        document.getElementById('taskDueByLabel').style.display = dueBy ? 'block' : 'none';
+
+        // Conditionally populate and display the "Done On" field
+        const doneOn = taskItem.getAttribute('data-done-on');
+        const isTaskDone = taskItem.getAttribute('data-done') === 'true';
+        document.getElementById('taskDoneOn').textContent = isTaskDone ? formatDate(doneOn) : '';
+        document.getElementById('taskDoneOnLabel').style.display = isTaskDone ? 'block' : 'none';
+        document.getElementById('taskDoneOn').style.display = isTaskDone ? 'block' : 'none';
 
         // Show the modal
         var taskDetailsModal = new bootstrap.Modal(document.getElementById('taskDetailsModal'));

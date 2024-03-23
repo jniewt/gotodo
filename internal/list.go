@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 )
@@ -144,6 +145,34 @@ type Task struct {
 	Title   string    `json:"title"`
 	List    string    `json:"list"`
 	Done    bool      `json:"done"`
+	DueBy   time.Time `json:"due_by,omitempty"`
+	DueOn   time.Time `json:"due_on,omitempty"`
 	Created time.Time `json:"created"`
-	DoneOn  time.Time `json:"done_on"`
+	DoneOn  time.Time `json:"done_on,omitempty"`
+}
+
+// MarshalJSON overwrites JSON marshalling to not send zero-value time fields
+func (t Task) MarshalJSON() ([]byte, error) {
+	var dueBy, dueOn, doneOn string
+	if !t.DueBy.IsZero() {
+		dueBy = t.DueBy.Format(time.RFC3339)
+	}
+	if !t.DueOn.IsZero() {
+		dueOn = t.DueOn.Format(time.RFC3339)
+	}
+	if !t.DoneOn.IsZero() {
+		doneOn = t.DoneOn.Format(time.RFC3339)
+	}
+	type Alias Task
+	return json.Marshal(&struct {
+		Alias
+		DueBy  string `json:"due_by,omitempty"`
+		DueOn  string `json:"due_on,omitempty"`
+		DoneOn string `json:"done_on,omitempty"`
+	}{
+		Alias:  Alias(t),
+		DueBy:  dueBy,
+		DueOn:  dueOn,
+		DoneOn: doneOn,
+	})
 }
