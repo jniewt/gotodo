@@ -1,6 +1,9 @@
 package internal
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 // Repository provides access to the todo list storage.
 type Repository struct {
@@ -63,9 +66,10 @@ func (r *Repository) AddItem(list, title string) (Task, error) {
 		return Task{}, err
 	}
 	item := Task{
-		ID:    r.NewID(),
-		Title: title,
-		List:  list,
+		ID:      r.NewID(),
+		Title:   title,
+		List:    list,
+		Created: time.Now(),
 	}
 	l.Items = append(l.Items, &item)
 	return item, nil
@@ -83,13 +87,18 @@ func (r *Repository) DelItem(id int) error {
 	return fmt.Errorf("item not found")
 }
 
-func (r *Repository) MarkDone(id int, done bool) error {
+func (r *Repository) MarkDone(id int, done bool) (Task, error) {
 	task, err := r.getItem(id)
 	if err != nil {
-		return err
+		return Task{}, err
 	}
 	task.Done = done
-	return nil
+	if done {
+		task.DoneOn = time.Now()
+	} else {
+		task.DoneOn = time.Time{}
+	}
+	return *task, nil
 }
 
 func (r *Repository) getList(name string) (*List, error) {
@@ -131,8 +140,10 @@ type List struct {
 }
 
 type Task struct {
-	ID    int    `json:"id"`
-	Title string `json:"title"`
-	List  string `json:"list"`
-	Done  bool   `json:"done"`
+	ID      int       `json:"id"`
+	Title   string    `json:"title"`
+	List    string    `json:"list"`
+	Done    bool      `json:"done"`
+	Created time.Time `json:"created"`
+	DoneOn  time.Time `json:"done_on"`
 }

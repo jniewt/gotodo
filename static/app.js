@@ -110,6 +110,11 @@ function displayListDetails(list) {
             const itemEl = document.createElement('li');
             itemEl.classList.add('list-group-item', 'd-flex', 'align-items-center');
             itemEl.setAttribute('data-item-id', item.id);
+            itemEl.setAttribute('data-title', item.title);
+            itemEl.setAttribute('data-list', list.name);
+            itemEl.setAttribute('data-done', item.done);
+            itemEl.setAttribute('data-created', item.created);
+            itemEl.setAttribute('data-done-on', item.done_on || '')
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
             checkbox.classList.add('me-2');
@@ -187,16 +192,24 @@ function handleCheckboxChange(list, itemId, isChecked, itemElement) {
                 throw new Error('Failed to update item status');
             }
 
+            const updatedTask = await response.json(); // Assuming the server returns the updated task
+
             const itemIndex = list.items.findIndex(item => item.id === itemId);
             if (itemIndex !== -1) {
-                list.items[itemIndex].done = isChecked;
+                // Update the local model with the new data from the server
+                list.items[itemIndex] = updatedTask.task;
+
+                // Also update the item element's data attributes to reflect the new state
+                itemElement.setAttribute('data-done', updatedTask.task.done);
+                itemElement.setAttribute('data-done-on', updatedTask.task.done_on || '');
             }
 
-            // After updating the data model, re-fetch and display the updated list
+            // Re-fetch and display the updated list to ensure UI consistency
             displayListDetails(list);
 
             // Remove fade-out class to reset element's state for future animations
             itemElement.classList.remove('fade-out');
+
         } catch (error) {
             console.error('Error updating item status:', error);
             // Optionally, handle the error (e.g., display a message to the user)
@@ -312,6 +325,44 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+// Handle task details modal
+document.getElementById('listItems').addEventListener('click', function(event) {
+    if (event.target.type === 'checkbox') {
+        return; // Ignore clicks on checkboxes
+    }
+    const taskItem = event.target.closest('.list-group-item');
+    if (taskItem) {
+        // Assuming you store task details as data attributes or retrieve them here
+        const taskId = taskItem.getAttribute('data-id');
+        // Fetch or otherwise retrieve the full task details using taskId if not already stored in data attributes
+
+        // Here we're assuming task details are directly available
+        document.getElementById('taskTitle').textContent = taskItem.getAttribute('data-title');
+        document.getElementById('taskList').textContent = taskItem.getAttribute('data-list');
+        document.getElementById('taskStatus').textContent = taskItem.getAttribute('data-done') === 'true' ? 'Done' : 'Not Done';
+        document.getElementById('taskCreated').textContent = formatDate(taskItem.getAttribute('data-created'));
+
+        // Conditionally format and set the "Done On" date or hide it
+        const isTaskDone = taskItem.getAttribute('data-done') === 'true';
+        const doneOnLabel = document.getElementById('taskDoneOnLabel');
+        const doneOnValue = document.getElementById('taskDoneOn');
+
+        if (isTaskDone) {
+            doneOnLabel.style.display = 'block'; // Show the "Done On" label
+            doneOnValue.textContent = formatDate(taskItem.getAttribute('data-done-on'));
+            doneOnValue.style.display = 'block'; // Show the "Done On" value
+        } else {
+            doneOnLabel.style.display = 'none'; // Hide the "Done On" label
+            doneOnValue.style.display = 'none'; // Hide the "Done On" value
+        }
+
+        // Show the modal
+        var taskDetailsModal = new bootstrap.Modal(document.getElementById('taskDetailsModal'));
+        taskDetailsModal.show();
+    }
+});
+
+
 async function deleteTask(taskId) {
     try {
         const response = await fetch(`/api/items/${taskId}`, { method: 'DELETE' });
@@ -395,3 +446,8 @@ function showAlert(message, type = 'danger') {
     }, 5000); // Adjust timing as needed
 }
 
+function formatDate(isoDateString) {
+    if (!isoDateString) return 'N/A'; // Handle null or undefined dates
+    const date = new Date(isoDateString);
+    return date.toLocaleString(); // Adjust formatting as needed
+}
