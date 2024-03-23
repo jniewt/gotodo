@@ -63,12 +63,16 @@ async function deleteList(listName) {
         if (responseDelete.ok) {
             alert('List deleted successfully.');
             fetchAllLists(); // Refresh the lists display
+            showAlert('List deleted successfully', 'success')
         } else {
-            throw new Error('Failed to delete the list');
+            console.error('Failed to delete list');
+            const errorResponse = await responseDelete.json(); // Assuming the server responds with JSON
+            const errorMessage = errorResponse.error || 'An unexpected error occurred'; // Fallback error message
+            showAlert(`Failed to delete list: ${errorMessage}`); // Show the error from the server
         }
     } catch (error) {
         console.error('Failed to delete list:', error);
-        alert('There was a problem deleting the list.');
+        showAlert(`Failed to delete list: ${error.message}`, 'danger'); // Show the error from the catch block
     }
 }
 
@@ -269,11 +273,13 @@ document.getElementById('saveTaskButton').addEventListener('click', async () => 
             // Reload or update the task list display here
             fetchListDetails(listName); // Assuming fetchListDetails is a function that fetches and displays the tasks for a list
             bootstrap.Modal.getInstance(document.getElementById('addItemModal')).hide(); // Hide the modal
+            showAlert('Task added successfully', 'success');
         } else {
             console.error('Failed to add task');
         }
     } catch (error) {
         console.error('Error adding task:', error);
+        showAlert(`Failed to add the task: ${error.message}`);
     }
 });
 
@@ -315,11 +321,16 @@ async function deleteTask(taskId) {
             const listDetailsEl = document.getElementById('listItems');
             const listName = listDetailsEl.getAttribute('data-current-list');
             fetchListDetails(listName); // Assuming this function refreshes the task list
+            showAlert('Task deleted successfully', 'success')
         } else {
             console.error('Failed to delete task');
+            const errorResponse = await response.json(); // Assuming the server responds with JSON
+            const errorMessage = errorResponse.error || 'An unexpected error occurred'; // Fallback error message
+            showAlert(`Failed to delete task: ${errorMessage}`); // Show the error from the server
         }
     } catch (error) {
         console.error('Error deleting task:', error);
+        showAlert(`Failed to delete the task: ${error.message}`); // Show the error from the catch block
     }
 }
 
@@ -335,12 +346,17 @@ async function createList(listName) {
         });
         if (response.ok) {
             fetchAllLists(); // Refresh the lists to include the new list
+            showAlert('List created successfully', 'success')
         } else {
-            throw new Error('Failed to create the list');
+            console.error('Failed to create list');
+            const errorResponse = await response.json(); // Assuming the server responds with JSON
+            const errorMessage = errorResponse.error || 'An unexpected error occurred'; // Fallback error message
+            showAlert(`Failed to create list: ${errorMessage}`); // Show the error from the server
+
         }
     } catch (error) {
         console.error('Failed to create list:', error);
-        alert('There was a problem creating the list.'); // Provide feedback to the user
+        showAlert(`Failed to create list: ${error.message}`, 'danger'); // Show the error from the catch block
     }
 }
 
@@ -355,5 +371,27 @@ function sortByTitleThenDone(a, b) {
     }
     // Then sort by title
     return a.title.localeCompare(b.title);
+}
+
+function showAlert(message, type = 'danger') {
+    const alertPlaceholder = document.getElementById('alertPlaceholder');
+
+    // Optional: Clear existing alerts to avoid over-crowding
+    alertPlaceholder.innerHTML = ''; // This line clears previous alerts. Remove if you prefer to stack alerts.
+
+    const alertWrapper = document.createElement('div');
+    alertWrapper.innerHTML = [
+        `<div class="alert alert-${type} alert-dismissible fade show" role="alert">`,
+        `   <span>${message}</span>`,
+        '   <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>',
+        '</div>'
+    ].join('');
+
+    alertPlaceholder.append(alertWrapper);
+
+    // Optional: Automatically dismiss the alert after a certain time
+    setTimeout(() => {
+        alertWrapper.remove();
+    }, 5000); // Adjust timing as needed
 }
 

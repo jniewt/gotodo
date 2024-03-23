@@ -62,9 +62,18 @@
     .custom-context-menu li:hover {
         background-color: #f0f0f0;
     }
+    #alertPlaceholder {
+        position: fixed;
+        top: 10px; /* Adjust based on your header/nav bar */
+        left: 70%;
+        transform: translateX(-50%);
+        width: auto;
+        z-index: 1050; /* Ensure it's above most other content */
+    }
 </style>
 
 <body>
+<div id="alertPlaceholder"></div>
 <div class="container-fluid">
     <div class="row">
         <!-- Side pane for lists -->
