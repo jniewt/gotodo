@@ -27,7 +27,7 @@ func (s *Server) routes() {
 	// delete a task
 	s.router.HandleFunc("DELETE /api/items/{id}", s.handleTaskDel)
 
-	// mark item as done
+	// change a task, e.g. mark item as done
 	// accepts JSON: TaskChange, returns JSON: {task: Task}
 	s.router.HandleFunc("PATCH /api/items/{id}", s.handleTaskChange)
 }
