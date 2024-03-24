@@ -305,13 +305,29 @@ func (t *TaskAdd) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// TaskChange is used to change a task. It is used in PATCH requests. Only fields that are set will be changed.
+// DueType must be set to one of TypeDueOn, TypeDueBy or TypeDueNone in requests to change the due date, otherwise
+// the due date supplied in the request will be ignored.
 type TaskChange struct {
-	Title  string    `json:"title"`
-	List   string    `json:"list"`
-	Done   bool      `json:"done"`
-	AllDay bool      `json:"all_day"`
-	DueBy  time.Time `json:"due_by,omitempty"`
-	DueOn  time.Time `json:"due_on,omitempty"`
+	Title  string `json:"title"`
+	List   string `json:"list"`
+	Done   bool   `json:"done"`
+	AllDay bool   `json:"all_day"`
+
+	// DueType must be set to one of TypeDueOn, TypeDueBy or TypeDueNone in requests to change the due date.
+	DueType dueType   `json:"due_type"`
+	DueBy   time.Time `json:"due_by,omitempty"`
+	DueOn   time.Time `json:"due_on,omitempty"`
+}
+
+func (t *TaskChange) getDueType() dueType {
+	if !t.DueBy.IsZero() {
+		return TypeDueBy
+	}
+	if !t.DueOn.IsZero() {
+		return TypeDueOn
+	}
+	return TypeDueNone
 }
 
 func (t *TaskChange) Validate() error {
@@ -331,7 +347,6 @@ func (t *TaskChange) Validate() error {
 
 // UnmarshalJSON overwrites JSON unmarshalling to parse time fields properly
 // TODO this is not fail-safe, it will fall apart if JS sends a different format
-// TODO need to rethink handling of dueBy and dueOn since changing them through a REST request is a bit tricky
 func (t *TaskChange) UnmarshalJSON(data []byte) error {
 
 	var input map[string]interface{}
@@ -355,40 +370,63 @@ func (t *TaskChange) UnmarshalJSON(data []byte) error {
 		t.AllDay = allDay.(bool)
 	}
 
-	format := "2006-01-02T15:04"
-	if t.AllDay {
-		format = "2006-01-02"
-	}
-
-	var dueByRaw, dueOnRaw interface{}
-	var dueByExists, dueOnExists bool
-	var dueBy, dueOn time.Time
-	var err error
-	if dueByRaw, dueByExists = input["due_by"]; dueByExists {
-		dueBy, err = time.ParseInLocation(format, dueByRaw.(string), time.Local)
-		if err != nil {
-			return err
-		}
-	}
-	if dueOnRaw, dueOnExists = input["due_on"]; dueOnExists {
-		dueOn, err = time.ParseInLocation(format, dueOnRaw.(string), time.Local)
-		if err != nil {
-			return err
-		}
-	}
-
-	if dueByExists {
-		t.DueBy = dueBy
-		if !dueBy.IsZero() {
-			t.DueOn = time.Time{}
-		}
-	}
-	if dueOnExists {
-		t.DueOn = dueOn
-		if !dueOn.IsZero() {
-			t.DueBy = time.Time{}
+	if dueTypRaw, ok := input["due_type"]; ok {
+		if t.getDueType() != dueTypRaw.(dueType) {
+			if err := t.overwriteDueFields(input); err != nil {
+				return err
+			}
 		}
 	}
 
 	return nil
 }
+
+func (t *TaskChange) overwriteDueFields(input map[string]interface{}) error {
+
+	dueTyp := input["due_type"].(dueType)
+
+	format := "2006-01-02T15:04"
+	if t.AllDay {
+		format = "2006-01-02"
+	}
+
+	switch dueTyp {
+	case TypeDueNone:
+		t.DueBy = time.Time{}
+		t.DueOn = time.Time{}
+	case TypeDueOn:
+		dueOnRaw, ok := input["due_on"]
+		if !ok {
+			return fmt.Errorf("missing due_on field")
+		}
+		dueOn, err := time.ParseInLocation(format, dueOnRaw.(string), time.Local)
+		if err != nil {
+			return err
+		}
+		t.DueOn = dueOn
+		t.DueBy = time.Time{}
+	case TypeDueBy:
+		dueByRaw, ok := input["due_by"]
+		if !ok {
+			return fmt.Errorf("missing due_by field")
+		}
+		dueBy, err := time.ParseInLocation(format, dueByRaw.(string), time.Local)
+		if err != nil {
+			return err
+		}
+		t.DueBy = dueBy
+		t.DueOn = time.Time{}
+	default:
+		return fmt.Errorf("invalid due_type")
+	}
+
+	return nil
+}
+
+type dueType string
+
+const (
+	TypeDueOn   dueType = "on"
+	TypeDueBy   dueType = "by"
+	TypeDueNone dueType = "none"
+)
