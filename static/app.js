@@ -283,6 +283,7 @@ document.getElementById('newListForm').addEventListener('submit', async function
         await createList(listName);
         fetchAllLists(); // Refresh the lists display
         bootstrap.Modal.getInstance(document.getElementById('newListModal')).hide(); // Hide the modal
+        form.classList.remove('was-validated'); // Reset validation state
     }
 });
 
