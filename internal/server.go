@@ -138,22 +138,32 @@ func (s *Server) handleTaskChange(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	request := struct {
-		Done bool `json:"done"`
-	}{}
+	var request TaskChange
 	if err = json.NewDecoder(r.Body).Decode(&request); err != nil {
 		s.httpError(w, http.StatusBadRequest, err)
 	}
-	t, err := s.orga.MarkDone(id, request.Done)
-	if err != nil {
+
+	// validate the input
+	if _, err = s.orga.GetTask(id); err != nil {
 		s.httpError(w, http.StatusBadRequest, err)
+		return
+	}
+	if err = request.Validate(); err != nil {
+		s.httpError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	res, err := s.orga.UpdateTask(id, request)
+	if err != nil {
+		s.httpError(w, http.StatusInternalServerError, err)
+		return
 	}
 
 	// respond with the updated task
 	resp := struct {
 		Task Task `json:"task"`
 	}{
-		Task: t,
+		Task: res,
 	}
 
 	s.jsonResponse(w, http.StatusAccepted, resp)
@@ -208,4 +218,6 @@ type Organiser interface {
 	AddItem(list string, item TaskAdd) (Task, error)
 	DelItem(id int) error
 	MarkDone(taskID int, done bool) (Task, error)
+	GetTask(id int) (Task, error)
+	UpdateTask(id int, request TaskChange) (Task, error)
 }

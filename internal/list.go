@@ -105,8 +105,76 @@ func (r *Repository) DelItem(id int) error {
 	return fmt.Errorf("item not found")
 }
 
+func (r *Repository) GetTask(id int) (Task, error) {
+	t, err := r.getTask(id)
+	if err != nil {
+		return Task{}, err
+	}
+	return *t, nil
+}
+
+func (r *Repository) UpdateTask(id int, change TaskChange) (Task, error) {
+	t, err := r.getTask(id)
+	if err != nil {
+		return Task{}, err
+	}
+
+	if t.Done != change.Done {
+		_, err = r.MarkDone(id, change.Done)
+		if err != nil {
+			return Task{}, err
+		}
+	}
+	if t.List != change.List {
+		_, err = r.MoveTask(id, change.List)
+		if err != nil {
+			return Task{}, err
+		}
+	}
+
+	t.Title = change.Title
+	t.AllDay = change.AllDay
+	t.DueBy = change.DueBy
+	t.DueOn = change.DueOn
+
+	return *t, nil
+}
+
+func (r *Repository) MoveTask(id int, list string) (Task, error) {
+	task, err := r.getTask(id)
+	if err != nil {
+		return Task{}, err
+	}
+
+	listFrom, err := r.getList(task.List)
+	if err != nil {
+		panic(fmt.Sprintf("list %v for task %d not found", task.List, id))
+	}
+
+	listTo, err := r.getList(list)
+	if err != nil {
+		return Task{}, err
+	}
+
+	// remove task from listFrom
+	for i, item := range listFrom.Items {
+		if item.ID == id {
+			listFrom.Items = append(listFrom.Items[:i], listFrom.Items[i+1:]...)
+			break
+		}
+	}
+
+	// add task to listTo
+	listTo.Items = append(listTo.Items, task)
+
+	// update task list
+	task.List = list
+
+	return *task, nil
+}
+
 func (r *Repository) MarkDone(id int, done bool) (Task, error) {
-	task, err := r.getItem(id)
+	task, err := r.getTask(id)
 	if err != nil {
 		return Task{}, err
 	}
@@ -128,7 +196,7 @@ func (r *Repository) getList(name string) (*List, error) {
 	return nil, ErrListNotFound
 }
 
-func (r *Repository) getItem(id int) (*Task, error) {
+func (r *Repository) getTask(id int) (*Task, error) {
 	for _, list := range r.lists {
 		for _, item := range list.Items {
 			if item.ID == id {
@@ -203,8 +271,69 @@ type TaskAdd struct {
 }
 
 // UnmarshalJSON overwrites JSON unmarshalling to parse time fields properly
+// TODO this is not fail-safe, it will fall apart if JS sends a different format
 func (t *TaskAdd) UnmarshalJSON(data []byte) error {
 	type Alias TaskAdd
+	aux := struct {
+		DueBy string `json:"due_by"`
+		DueOn string `json:"due_on"`
+		*Alias
+	}{
+		Alias: (*Alias)(t),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	format := "2006-01-02T15:04"
+	if aux.AllDay {
+		format = "2006-01-02"
+	}
+	if aux.DueBy != "" {
+		dueBy, err := time.ParseInLocation(format, aux.DueBy, time.Local)
+		if err != nil {
+			return err
+		}
+		t.DueBy = dueBy
+	}
+	if aux.DueOn != "" {
+		dueOn, err := time.ParseInLocation(format, aux.DueOn, time.Local)
+		if err != nil {
+			return err
+		}
+		t.DueOn = dueOn
+	}
+	return nil
+}
+
+type TaskChange struct {
+	ID     int       `json:"id"`
+	Title  string    `json:"title"`
+	List   string    `json:"list"`
+	Done   bool      `json:"done"`
+	AllDay bool      `json:"all_day"`
+	DueBy  time.Time `json:"due_by,omitempty"`
+	DueOn  time.Time `json:"due_on,omitempty"`
+}
+
+func (t *TaskChange) Validate() error {
+	if t.Title == "" {
+		return fmt.Errorf("missing task title")
+	}
+	if t.List == "" {
+		return fmt.Errorf("missing list name")
+	}
+
+	if !t.DueBy.IsZero() && !t.DueOn.IsZero() {
+		return fmt.Errorf("only one of dueOn or dueBy can be set")
+	}
+
+	return nil
+}
+
+// UnmarshalJSON overwrites JSON unmarshalling to parse time fields properly
+// TODO this is not fail-safe, it will fall apart if JS sends a different format
+func (t *TaskChange) UnmarshalJSON(data []byte) error {
+	type Alias TaskChange
 	aux := struct {
 		DueBy string `json:"due_by"`
 		DueOn string `json:"due_on"`
