@@ -306,7 +306,6 @@ func (t *TaskAdd) UnmarshalJSON(data []byte) error {
 }
 
 type TaskChange struct {
-	ID     int       `json:"id"`
 	Title  string    `json:"title"`
 	List   string    `json:"list"`
 	Done   bool      `json:"done"`
@@ -332,35 +331,64 @@ func (t *TaskChange) Validate() error {
 
 // UnmarshalJSON overwrites JSON unmarshalling to parse time fields properly
 // TODO this is not fail-safe, it will fall apart if JS sends a different format
+// TODO need to rethink handling of dueBy and dueOn since changing them through a REST request is a bit tricky
 func (t *TaskChange) UnmarshalJSON(data []byte) error {
-	type Alias TaskChange
-	aux := struct {
-		DueBy string `json:"due_by"`
-		DueOn string `json:"due_on"`
-		*Alias
-	}{
-		Alias: (*Alias)(t),
-	}
-	if err := json.Unmarshal(data, &aux); err != nil {
+
+	var input map[string]interface{}
+	if err := json.Unmarshal(data, &input); err != nil {
 		return err
 	}
+
+	if title, ok := input["title"]; ok {
+		t.Title = title.(string)
+	}
+
+	if list, ok := input["list"]; ok {
+		t.List = list.(string)
+	}
+
+	if done, ok := input["done"]; ok {
+		t.Done = done.(bool)
+	}
+
+	if allDay, ok := input["all_day"]; ok {
+		t.AllDay = allDay.(bool)
+	}
+
 	format := "2006-01-02T15:04"
-	if aux.AllDay {
+	if t.AllDay {
 		format = "2006-01-02"
 	}
-	if aux.DueBy != "" {
-		dueBy, err := time.ParseInLocation(format, aux.DueBy, time.Local)
+
+	var dueByRaw, dueOnRaw interface{}
+	var dueByExists, dueOnExists bool
+	var dueBy, dueOn time.Time
+	var err error
+	if dueByRaw, dueByExists = input["due_by"]; dueByExists {
+		dueBy, err = time.ParseInLocation(format, dueByRaw.(string), time.Local)
 		if err != nil {
 			return err
 		}
+	}
+	if dueOnRaw, dueOnExists = input["due_on"]; dueOnExists {
+		dueOn, err = time.ParseInLocation(format, dueOnRaw.(string), time.Local)
+		if err != nil {
+			return err
+		}
+	}
+
+	if dueByExists {
 		t.DueBy = dueBy
-	}
-	if aux.DueOn != "" {
-		dueOn, err := time.ParseInLocation(format, aux.DueOn, time.Local)
-		if err != nil {
-			return err
+		if !dueBy.IsZero() {
+			t.DueOn = time.Time{}
 		}
-		t.DueOn = dueOn
 	}
+	if dueOnExists {
+		t.DueOn = dueOn
+		if !dueOn.IsZero() {
+			t.DueBy = time.Time{}
+		}
+	}
+
 	return nil
 }

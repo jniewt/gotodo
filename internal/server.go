@@ -138,8 +138,13 @@ func (s *Server) handleTaskChange(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var request TaskChange
-	if err = json.NewDecoder(r.Body).Decode(&request); err != nil {
+	change, err := s.initTaskChange(id)
+	if err != nil {
+		s.httpError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if err = json.NewDecoder(r.Body).Decode(&change); err != nil {
 		s.httpError(w, http.StatusBadRequest, err)
 	}
 
@@ -148,12 +153,12 @@ func (s *Server) handleTaskChange(w http.ResponseWriter, r *http.Request) {
 		s.httpError(w, http.StatusBadRequest, err)
 		return
 	}
-	if err = request.Validate(); err != nil {
+	if err = change.Validate(); err != nil {
 		s.httpError(w, http.StatusBadRequest, err)
 		return
 	}
 
-	res, err := s.orga.UpdateTask(id, request)
+	res, err := s.orga.UpdateTask(id, change)
 	if err != nil {
 		s.httpError(w, http.StatusInternalServerError, err)
 		return
@@ -167,6 +172,23 @@ func (s *Server) handleTaskChange(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.jsonResponse(w, http.StatusAccepted, resp)
+}
+
+// initTaskChange initializes a TaskChange struct from the existing task with the given ID.
+func (s *Server) initTaskChange(id int) (TaskChange, error) {
+	t, err := s.orga.GetTask(id)
+	if err != nil {
+		return TaskChange{}, err
+	}
+
+	return TaskChange{
+		Title:  t.Title,
+		Done:   t.Done,
+		List:   t.List,
+		AllDay: t.AllDay,
+		DueOn:  t.DueOn,
+		DueBy:  t.DueBy,
+	}, nil
 }
 
 func (s *Server) handleTaskPost(w http.ResponseWriter, r *http.Request) {
