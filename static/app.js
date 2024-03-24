@@ -408,12 +408,11 @@ document.getElementById('saveTaskButton').addEventListener('click', async () => 
     }
 });
 
-// Add a context menu to the task list items
-document.addEventListener('DOMContentLoaded', () => {
+function taskContextMenu() {
     // Assuming the taskList element itself is not dynamically added/removed
     const taskList = document.getElementById('listItems');
 
-    taskList.addEventListener('contextmenu', function(event) {
+    taskList.addEventListener('contextmenu', function (event) {
         // Check if the clicked element is a task entry
         const clickedTask = event.target.closest('.list-group-item');
         if (!clickedTask) {
@@ -423,19 +422,61 @@ document.addEventListener('DOMContentLoaded', () => {
 
         event.preventDefault();
 
-        const taskContextMenu = document.getElementById('taskContextMenu');
+        const menu = document.getElementById('taskContextMenu');
         // Set the position of the menu
-        taskContextMenu.style.left = `${event.pageX}px`;
-        taskContextMenu.style.top = `${event.pageY}px`;
-        taskContextMenu.style.display = 'block';
+        menu.style.left = `${event.pageX}px`;
+        menu.style.top = `${event.pageY}px`;
+        menu.style.display = 'block';
 
         // Store the task ID, if needed for deletion
-        taskContextMenu.dataset.taskId = clickedTask.getAttribute('data-item-id');
+        menu.dataset.taskId = clickedTask.getAttribute('data-item-id');
 
         // Hide the menu when clicking elsewhere
-        document.addEventListener('click', () => taskContextMenu.style.display = 'none', { once: true });
+        document.addEventListener('click', () => menu.style.display = 'none', {once: true});
     });
+}
+
+// Add a context menu to the task list items
+document.addEventListener('DOMContentLoaded', () => {
+    taskContextMenu();
 });
+
+function showTaskDetailsModal(taskItem) {
+    // Assuming you store task details as data attributes or retrieve them here
+    const taskId = taskItem.getAttribute('data-id');
+    // Fetch or otherwise retrieve the full task details using taskId if not already stored in data attributes
+
+    // Here we're assuming task details are directly available
+    document.getElementById('taskTitle').textContent = taskItem.getAttribute('data-title');
+    document.getElementById('taskList').textContent = taskItem.getAttribute('data-list');
+    document.getElementById('taskStatus').textContent = taskItem.getAttribute('data-done') === 'true' ? 'Done' : 'Not Done';
+    document.getElementById('taskCreated').textContent = formatDate(taskItem.getAttribute('data-created'));
+    document.getElementById('taskAllDay').textContent = taskItem.getAttribute('data-all-day') === 'true' ? 'Yes' : 'No';
+
+    // Conditionally populate and display the "Due On" and "Due By" fields
+    const allDay = taskItem.getAttribute('data-all-day') === 'true';
+    const dueOn = taskItem.getAttribute('data-due-on');
+    const dueBy = taskItem.getAttribute('data-due-by');
+
+    document.getElementById('taskDueOn').textContent = dueOn ? formatDateHumanReadable(dueOn, allDay) : '';
+    document.getElementById('taskDueOn').style.display = dueOn ? 'block' : 'none';
+    document.getElementById('taskDueOnLabel').style.display = dueOn ? 'block' : 'none';
+
+    document.getElementById('taskDueBy').textContent = dueBy ? formatDateHumanReadable(dueBy, allDay) : '';
+    document.getElementById('taskDueBy').style.display = dueBy ? 'block' : 'none';
+    document.getElementById('taskDueByLabel').style.display = dueBy ? 'block' : 'none';
+
+    // Conditionally populate and display the "Done On" field
+    const doneOn = taskItem.getAttribute('data-done-on');
+    const isTaskDone = taskItem.getAttribute('data-done') === 'true';
+    document.getElementById('taskDoneOn').textContent = isTaskDone ? formatDate(doneOn) : '';
+    document.getElementById('taskDoneOnLabel').style.display = isTaskDone ? 'block' : 'none';
+    document.getElementById('taskDoneOn').style.display = isTaskDone ? 'block' : 'none';
+
+    // Show the modal
+    var taskDetailsModal = new bootstrap.Modal(document.getElementById('taskDetailsModal'));
+    taskDetailsModal.show();
+}
 
 // Handle task details modal
 document.getElementById('listItems').addEventListener('click', function(event) {
@@ -444,40 +485,7 @@ document.getElementById('listItems').addEventListener('click', function(event) {
     }
     const taskItem = event.target.closest('.list-group-item');
     if (taskItem) {
-        // Assuming you store task details as data attributes or retrieve them here
-        const taskId = taskItem.getAttribute('data-id');
-        // Fetch or otherwise retrieve the full task details using taskId if not already stored in data attributes
-
-        // Here we're assuming task details are directly available
-        document.getElementById('taskTitle').textContent = taskItem.getAttribute('data-title');
-        document.getElementById('taskList').textContent = taskItem.getAttribute('data-list');
-        document.getElementById('taskStatus').textContent = taskItem.getAttribute('data-done') === 'true' ? 'Done' : 'Not Done';
-        document.getElementById('taskCreated').textContent = formatDate(taskItem.getAttribute('data-created'));
-        document.getElementById('taskAllDay').textContent = taskItem.getAttribute('data-all-day') === 'true' ? 'Yes' : 'No';
-
-        // Conditionally populate and display the "Due On" and "Due By" fields
-        const allDay = taskItem.getAttribute('data-all-day') === 'true';
-        const dueOn = taskItem.getAttribute('data-due-on');
-        const dueBy = taskItem.getAttribute('data-due-by');
-
-        document.getElementById('taskDueOn').textContent = dueOn ? formatDateHumanReadable(dueOn, allDay) : '';
-        document.getElementById('taskDueOn').style.display = dueOn ? 'block' : 'none';
-        document.getElementById('taskDueOnLabel').style.display = dueOn ? 'block' : 'none';
-
-        document.getElementById('taskDueBy').textContent = dueBy ? formatDateHumanReadable(dueBy, allDay) : '';
-        document.getElementById('taskDueBy').style.display = dueBy ? 'block' : 'none';
-        document.getElementById('taskDueByLabel').style.display = dueBy ? 'block' : 'none';
-
-        // Conditionally populate and display the "Done On" field
-        const doneOn = taskItem.getAttribute('data-done-on');
-        const isTaskDone = taskItem.getAttribute('data-done') === 'true';
-        document.getElementById('taskDoneOn').textContent = isTaskDone ? formatDate(doneOn) : '';
-        document.getElementById('taskDoneOnLabel').style.display = isTaskDone ? 'block' : 'none';
-        document.getElementById('taskDoneOn').style.display = isTaskDone ? 'block' : 'none';
-
-        // Show the modal
-        var taskDetailsModal = new bootstrap.Modal(document.getElementById('taskDetailsModal'));
-        taskDetailsModal.show();
+        showTaskDetailsModal(taskItem);
     }
 });
 
