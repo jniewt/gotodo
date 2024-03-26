@@ -1,4 +1,4 @@
-import { formatDate, formatDateHumanReadable } from './format-date.js';
+import { formatDate, formatDateHuman } from './format-date.js';
 
 async function fetchAllLists() {
     try {
@@ -458,11 +458,11 @@ function showTaskDetailsModal(taskItem) {
     const dueOn = taskItem.getAttribute('data-due-on');
     const dueBy = taskItem.getAttribute('data-due-by');
 
-    document.getElementById('taskDueOn').textContent = dueOn ? formatDateHumanReadable(dueOn, allDay) : '';
+    document.getElementById('taskDueOn').textContent = dueOn ? formatDateHuman(dueOn, allDay) : '';
     document.getElementById('taskDueOn').style.display = dueOn ? 'block' : 'none';
     document.getElementById('taskDueOnLabel').style.display = dueOn ? 'block' : 'none';
 
-    document.getElementById('taskDueBy').textContent = dueBy ? formatDateHumanReadable(dueBy, allDay) : '';
+    document.getElementById('taskDueBy').textContent = dueBy ? formatDateHuman(dueBy, allDay) : '';
     document.getElementById('taskDueBy').style.display = dueBy ? 'block' : 'none';
     document.getElementById('taskDueByLabel').style.display = dueBy ? 'block' : 'none';
 
