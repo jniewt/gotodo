@@ -1,4 +1,5 @@
 import { formatDate, formatDateHuman } from './format-date.js';
+import { sortTasks, sortByTitleThenDone } from './sort-tasks.js';
 
 async function fetchAllLists() {
     try {
@@ -52,7 +53,7 @@ function displayListDetails(list) {
     if (!list.items || list.items.length === 0) {
         listDetailsEl.innerHTML += '<p>No items in this list</p>';
     } else {
-        const sortedItems = sortItems(list.items, sortByTitleThenDone); // Sort items
+        const sortedItems = sortTasks(list.items, sortByTitleThenDone);
         const itemsEl = document.createElement('ul');
         itemsEl.classList.add('list-group');
 
@@ -474,7 +475,7 @@ function showTaskDetailsModal(taskItem) {
     document.getElementById('taskDoneOn').style.display = isTaskDone ? 'block' : 'none';
 
     // Show the modal
-    var taskDetailsModal = new bootstrap.Modal(document.getElementById('taskDetailsModal'));
+    let taskDetailsModal = new bootstrap.Modal(document.getElementById('taskDetailsModal'));
     taskDetailsModal.show();
 }
 
@@ -539,21 +540,6 @@ document.getElementById('taskAllDayInput').addEventListener('change', function()
         // will naturally preserve it, so there's no need to explicitly set it again.
     }
 });
-
-
-
-function sortItems(items, sortStrategy) {
-    return items.sort(sortStrategy);
-}
-
-function sortByTitleThenDone(a, b) {
-    // Move done items to the bottom
-    if (a.done !== b.done) {
-        return a.done ? 1 : -1;
-    }
-    // Then sort by title
-    return a.title.localeCompare(b.title);
-}
 
 function showAlert(message, type = 'danger') {
     const alertPlaceholder = document.getElementById('alertPlaceholder');
