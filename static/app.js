@@ -1,10 +1,12 @@
 import { formatDate, formatDateHuman } from './format-date.js';
 import { sortTasks, sortByTitleThenDone } from './sort-tasks.js';
+import { ApiService } from './api-service.js';
+
+const apiService = new ApiService();
 
 async function fetchAllLists() {
     try {
-        const response = await fetch('/api/list');
-        const data = await response.json();
+        const data = await apiService.fetchAllLists();
         const listsDisplay = document.getElementById('listsDisplay');
         listsDisplay.innerHTML = ''; // Clear current lists display
 
@@ -22,13 +24,22 @@ async function fetchAllLists() {
             const dropdown = document.createElement('div');
             dropdown.classList.add('dropdown');
             dropdown.innerHTML = `
-        <a class="text-secondary" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-        <i class="bi bi-three-dots-vertical"></i>
-        </a>
-        <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-            <li><a class="dropdown-item" href="#" onclick="event.stopPropagation(); deleteList('${listName}');">Delete</a></li>
-        </ul>
-    `;
+    <a class="text-secondary" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+    <i class="bi bi-three-dots-vertical"></i>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+        <li><a class="dropdown-item" href="#">Delete</a></li>
+    </ul>
+`;
+            // Find the delete option within the dropdown
+            const deleteOption = dropdown.querySelector('.dropdown-item');
+
+            // Add click event listener to the delete option
+            deleteOption.addEventListener('click', (event) => {
+                event.stopPropagation(); // Prevent event from bubbling up to elements beneath
+                deleteList(listName); // Call deleteList function with the list name
+            });
+
             // Stop propagation for the dropdown to prevent list selection
             dropdown.addEventListener('click', function(event) {
                 event.stopPropagation();
@@ -112,61 +123,44 @@ function displayListDetails(list) {
 
 async function createList(listName) {
     try {
-        const response = await fetch('/api/list', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ name: listName }),
-        });
-        if (response.ok) {
-            fetchAllLists(); // Refresh the lists to include the new list
-            showAlert('List created successfully', 'success')
-        } else {
-            console.error('Failed to create list');
-            const errorResponse = await response.json(); // Assuming the server responds with JSON
-            const errorMessage = errorResponse.error || 'An unexpected error occurred'; // Fallback error message
-            showAlert(`Failed to create list: ${errorMessage}`); // Show the error from the server
+        await apiService.createList(listName);
 
-        }
+        // If the API call was successful, you might receive data back.
+        // Depending on your API's response, you can use this data to update the UI directly
+        // or call another function to refresh the list of items displayed.
+        fetchAllLists(); // Refresh the lists display to include the newly created list
+
+        // Optionally, display a success message to the user
+        showAlert('List created successfully!', 'success');
+
     } catch (error) {
         console.error('Failed to create list:', error);
-        showAlert(`Failed to create list: ${error.message}`, 'danger'); // Show the error from the catch block
+        // Display an error message to the user. The actual implementation of showAlert
+        // would depend on how you want to show alerts. This is just a placeholder.
+        showAlert(`Error creating list: ${error.message}`, 'danger');
     }
 }
 
 async function deleteList(listName) {
     try {
         // Fetch list details first to check if it has items
-        const responseDetails = await fetch(`/api/list/${listName}`);
-        const listDetails = await responseDetails.json();
-
-        // Check if list is not empty
+        const listDetails = await apiService.fetchList(listName);
         if (listDetails.list.items && listDetails.list.items.length > 0) {
             // Ask for confirmation
             const isConfirmed = confirm(`The list "${listName}" is not empty. Are you sure you want to delete it?`);
             if (!isConfirmed) {
-                return; // Stop if user does not confirm
+                return;
             }
         }
 
         // Proceed with deletion if list is empty or user confirmed
-        const responseDelete = await fetch(`/api/list/${listName}`, {
-            method: 'DELETE',
-        });
-        if (responseDelete.ok) {
-            alert('List deleted successfully.');
-            fetchAllLists(); // Refresh the lists display
-            showAlert('List deleted successfully', 'success')
-        } else {
-            console.error('Failed to delete list');
-            const errorResponse = await responseDelete.json(); // Assuming the server responds with JSON
-            const errorMessage = errorResponse.error || 'An unexpected error occurred'; // Fallback error message
-            showAlert(`Failed to delete list: ${errorMessage}`); // Show the error from the server
-        }
+        await apiService.deleteList(listName);
+        await fetchAllLists(); // Refresh the lists display
+        showAlert('List deleted successfully', 'success')
+
     } catch (error) {
         console.error('Failed to delete list:', error);
-        showAlert(`Failed to delete list: ${error.message}`, 'danger'); // Show the error from the catch block
+        showAlert(`Error deleting list: ${error.message}`, 'danger'); // Show the error from the catch block
     }
 }
 
@@ -178,7 +172,7 @@ async function deleteTask(taskId) {
             console.log('Task deleted successfully');
             const listDetailsEl = document.getElementById('listItems');
             const listName = listDetailsEl.getAttribute('data-current-list');
-            fetchListDetails(listName); // Assuming this function refreshes the task list
+            await fetchListDetails(listName); // Assuming this function refreshes the task list
             showAlert('Task deleted successfully', 'success')
         } else {
             console.error('Failed to delete task');
@@ -193,15 +187,8 @@ async function deleteTask(taskId) {
 }
 
 async function fetchListDetails(listName) {
-    console.log(`Fetching details for list: ${listName}`);
     try {
-        const response = await fetch(`/api/list/${listName}`);
-        if (!response.ok) {
-            throw new Error('Failed to fetch list details');
-        }
-        const listDetails = await response.json();
-        console.log('List details fetched:', listDetails);
-
+        const listDetails = await apiService.fetchList(listName);
         displayListDetails(listDetails.list); // Assuming you have a function to display these details
     } catch (error) {
         console.error('Error fetching list details:', error);
@@ -210,8 +197,8 @@ async function fetchListDetails(listName) {
 
 async function populateListDropdown() {
     try {
-        const response = await fetch('/api/list');
-        const data = await response.json();
+        const data = await apiService.fetchAllLists()
+        console.log(data)
         const dropdown = document.getElementById('taskListDropdown');
         dropdown.innerHTML = ''; // Clear existing options
         data.lists.forEach(listName => {
@@ -562,5 +549,4 @@ function showAlert(message, type = 'danger') {
         alertWrapper.remove();
     }, 5000); // Adjust timing as needed
 }
-
 
