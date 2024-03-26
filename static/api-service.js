@@ -56,5 +56,23 @@ export class ApiService {
         });
     }
 
-    // Add more methods as needed...
+    createTask(listName, task) {
+        return this.request(`/list/${encodeURIComponent(listName)}`, {
+            method: 'POST',
+            body: task
+        });
+    }
+
+    deleteTask(taskId) {
+        return this.request(`/items/${taskId}`, {
+            method: 'DELETE'
+        });
+    }
+
+    updateTask(taskId, task) {
+        return this.request(`/items/${taskId}`, {
+            method: 'PATCH',
+            body: task
+        });
+    }
 }

@@ -166,20 +166,14 @@ async function deleteList(listName) {
 
 async function deleteTask(taskId) {
     try {
-        const response = await fetch(`/api/items/${taskId}`, { method: 'DELETE' });
-        if (response.ok) {
-            // Remove the task from the list or refresh the list
-            console.log('Task deleted successfully');
-            const listDetailsEl = document.getElementById('listItems');
-            const listName = listDetailsEl.getAttribute('data-current-list');
-            await fetchListDetails(listName); // Assuming this function refreshes the task list
-            showAlert('Task deleted successfully', 'success')
-        } else {
-            console.error('Failed to delete task');
-            const errorResponse = await response.json(); // Assuming the server responds with JSON
-            const errorMessage = errorResponse.error || 'An unexpected error occurred'; // Fallback error message
-            showAlert(`Failed to delete task: ${errorMessage}`); // Show the error from the server
-        }
+        await apiService.deleteTask(taskId);
+
+        // Refresh the task list after deletion
+        const listDetailsEl = document.getElementById('listItems');
+        const listName = listDetailsEl.getAttribute('data-current-list');
+        await fetchListDetails(listName);
+        showAlert('Task deleted successfully', 'success')
+
     } catch (error) {
         console.error('Error deleting task:', error);
         showAlert(`Failed to delete the task: ${error.message}`); // Show the error from the catch block
@@ -217,21 +211,10 @@ function handleCheckboxChange(list, itemId, isChecked, itemElement) {
     itemElement.classList.add('fade-out');
 
     itemElement.addEventListener('animationend', async () => {
-        // PATCH the new 'done' status to the server
+
         try {
-            const response = await fetch(`/api/items/${itemId}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ done: isChecked }),
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to update item status');
-            }
-
-            const updatedTask = await response.json(); // Assuming the server returns the updated task
+            // PATCH the new 'done' status to the server
+            const updatedTask = await apiService.updateTask(itemId, { done: isChecked });
 
             const itemIndex = list.items.findIndex(item => item.id === itemId);
             if (itemIndex !== -1) {
@@ -371,25 +354,12 @@ document.getElementById('saveTaskButton').addEventListener('click', async () => 
     }
 
     try {
-        const response = await fetch(`/api/list/${listName}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestPayload),
-        });
+        const data = await apiService.createTask(listName, requestPayload);
+        console.log('Task added:', data.task);
+        await fetchListDetails(listName); // Refresh the task list
+        bootstrap.Modal.getInstance(document.getElementById('addItemModal')).hide(); // Hide the modal
+        showAlert('Task added successfully', 'success');
 
-        const data = await response.json();
-
-        if (response.ok) {
-            console.log('Task added:', data.task);
-            fetchListDetails(listName); // Refresh the task list
-            bootstrap.Modal.getInstance(document.getElementById('addItemModal')).hide(); // Hide the modal
-            showAlert('Task added successfully', 'success');
-        } else {
-            console.error('Failed to add task');
-            showAlert(`Failed to add the task: ${data.error}`); // Show error alert
-        }
     } catch (error) {
         console.error('Error adding task:', error);
         showAlert(`Failed to add the task: ${error.message}`);
