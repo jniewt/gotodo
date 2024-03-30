@@ -1,33 +1,40 @@
 package internal
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/jniewt/gotodo/cors"
+)
 
 func (s *Server) routes() {
+	// allowCors is a middleware that allows CORS requests from any origin.
+	allowCors := cors.New([]string{"*"}).HandleFunc
+
 	s.router.Handle("GET /", http.FileServer(http.FS(s.staticFS)))
 
 	// get names of all lists TODO shouldn't it return the lists themselves?
 	// returns JSON: {lists: [string]}
-	s.router.HandleFunc("GET /api/list", s.handleListGetAll)
+	s.router.HandleFunc("GET /api/list", allowCors(s.handleListGetAll))
 
 	// get a list
 	// returns JSON: {list: List}
-	s.router.HandleFunc("GET /api/list/{name}", s.handleListGet)
+	s.router.HandleFunc("GET /api/list/{name}", allowCors(s.handleListGet))
 
 	// create a new list
 	// accepts JSON: ListAdd, returns JSON: {list: List}
-	s.router.HandleFunc("POST /api/list", s.handleListPost)
+	s.router.HandleFunc("POST /api/list", allowCors(s.handleListPost))
 
 	// delete a list
-	s.router.HandleFunc("DELETE /api/list/{name}", s.handleListDel)
+	s.router.HandleFunc("DELETE /api/list/{name}", allowCors(s.handleListDel))
 
 	// add a task
 	// accepts JSON: TaskAdd, returns JSON: {task: Task}
-	s.router.HandleFunc("POST /api/list/{name}", s.handleTaskPost)
+	s.router.HandleFunc("POST /api/list/{name}", allowCors(s.handleTaskPost))
 
 	// delete a task
-	s.router.HandleFunc("DELETE /api/items/{id}", s.handleTaskDel)
+	s.router.HandleFunc("DELETE /api/items/{id}", allowCors(s.handleTaskDel))
 
 	// change a task, e.g. mark item as done
 	// accepts JSON: TaskChange, returns JSON: {task: Task}
-	s.router.HandleFunc("PATCH /api/items/{id}", s.handleTaskChange)
+	s.router.HandleFunc("PATCH /api/items/{id}", allowCors(s.handleTaskChange))
 }
