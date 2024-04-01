@@ -39,7 +39,6 @@ export class UIManager {
         let combinedLists = this.listManager.lists.map(listName => ({ name: listName, filtered: false }))
             .concat(this.listManager.filteredLists.map(listName => ({ name: listName, filtered: true })));
 
-        let lists = this.listManager.lists;
         combinedLists.forEach(list => this.createListElement(list.name, list.filtered));
     }
 
@@ -47,8 +46,19 @@ export class UIManager {
     createListElement(listName, isFiltered= false) {
         const listElement = document.createElement('a');
         listElement.classList.add('list-group-item', 'list-group-item-action', 'd-flex', 'justify-content-between', 'align-items-center');
-        listElement.textContent = listName;
         listElement.href = '#';
+
+        // Icon selection based on the list type
+        const iconClass = isFiltered ? 'bi-filter' : 'bi-list-task';
+        const icon = document.createElement('i');
+        icon.classList.add('bi', iconClass, 'me-2'); // 'me-2' for margin
+
+        listElement.appendChild(icon); // Append the icon to the list element
+
+        // Text content
+        const text = document.createElement('span');
+        text.textContent = listName;
+        listElement.appendChild(text); // Append the text next to the icon
 
         listElement.onclick = () => {
             this.listManager.getTasks(listName).then((tasks) => {
@@ -59,9 +69,12 @@ export class UIManager {
             return false; // Prevent default anchor action
         };
 
-        if (!isFiltered) {
-            const dropdown = this.createDropdown(listName);
-            listElement.appendChild(dropdown);
+        const dropdown = this.createDropdown(listName);
+        listElement.appendChild(dropdown);
+
+        // hide the dropdown for filtered lists for now, but so that the layout doesn't break
+        if (isFiltered) {
+            dropdown.style.visibility = 'hidden';
         }
 
         this.dom.listsDisplay.appendChild(listElement);

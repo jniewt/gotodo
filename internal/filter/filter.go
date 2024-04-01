@@ -87,6 +87,8 @@ func DueOnToday() Node {
 	}
 }
 
+// Node is a node in a filter tree. It can be either a logical operator or a comparison operator. The root node is always
+// a logical operator. The tree is evaluated recursively.
 type Node interface {
 	Evaluate(task core.Task) bool
 }
