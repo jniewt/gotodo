@@ -1,4 +1,4 @@
-package internal
+package rest
 
 import (
 	"encoding/json"
@@ -8,6 +8,9 @@ import (
 	"strconv"
 
 	log "github.com/sirupsen/logrus"
+
+	"github.com/jniewt/gotodo/api"
+	"github.com/jniewt/gotodo/internal/core"
 )
 
 type Server struct {
@@ -78,21 +81,18 @@ func (s *Server) handleListGet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type response struct {
-		List List `json:"list"`
+		List api.ListResponse `json:"list"`
 	}
 	l, err := s.orga.GetList(name)
 	if err != nil {
 		s.httpError(w, http.StatusBadRequest, err)
 		return
 	}
-	s.jsonResponse(w, http.StatusOK, response{List: l})
+	s.jsonResponse(w, http.StatusOK, response{List: api.FromList(l)})
 }
 
 func (s *Server) handleListPost(w http.ResponseWriter, r *http.Request) {
-	type request struct {
-		Name string `json:"name"`
-	}
-	var req request
+	var req api.ListAdd
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		s.httpError(w, http.StatusBadRequest, err)
 		return
@@ -110,10 +110,10 @@ func (s *Server) handleListPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type response struct {
-		List List `json:"list"`
+		List api.ListResponse `json:"list"`
 	}
 
-	s.jsonResponse(w, http.StatusCreated, response{List: l})
+	s.jsonResponse(w, http.StatusCreated, response{List: api.FromList(l)})
 }
 
 func (s *Server) handleListDel(w http.ResponseWriter, r *http.Request) {
@@ -166,22 +166,22 @@ func (s *Server) handleTaskChange(w http.ResponseWriter, r *http.Request) {
 
 	// respond with the updated task
 	resp := struct {
-		Task Task `json:"task"`
+		Task api.TaskResponse `json:"task"`
 	}{
-		Task: res,
+		Task: api.FromTask(res),
 	}
 
 	s.jsonResponse(w, http.StatusAccepted, resp)
 }
 
 // initTaskChange initializes a TaskChange struct from the existing task with the given ID.
-func (s *Server) initTaskChange(id int) (TaskChange, error) {
+func (s *Server) initTaskChange(id int) (api.TaskChange, error) {
 	t, err := s.orga.GetTask(id)
 	if err != nil {
-		return TaskChange{}, err
+		return api.TaskChange{}, err
 	}
 
-	return TaskChange{
+	return api.TaskChange{
 		Title:  t.Title,
 		Done:   t.Done,
 		List:   t.List,
@@ -198,7 +198,7 @@ func (s *Server) handleTaskPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	request := TaskAdd{}
+	request := api.TaskAdd{}
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		s.httpError(w, http.StatusBadRequest, err)
 		return
@@ -211,8 +211,8 @@ func (s *Server) handleTaskPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := struct {
-		Task Task `json:"task"`
-	}{Task: t}
+		Task api.TaskResponse `json:"task"`
+	}{Task: api.FromTask(t)}
 
 	s.jsonResponse(w, http.StatusCreated, resp)
 }
@@ -234,12 +234,12 @@ func (s *Server) handleTaskDel(w http.ResponseWriter, r *http.Request) {
 
 type Organiser interface {
 	Lists() []string
-	GetList(name string) (List, error)
-	AddList(name string) (List, error)
+	GetList(name string) (core.List, error)
+	AddList(name string) (core.List, error)
 	DelList(name string) error
-	AddItem(list string, item TaskAdd) (Task, error)
+	AddItem(list string, item api.TaskAdd) (core.Task, error)
 	DelItem(id int) error
-	MarkDone(taskID int, done bool) (Task, error)
-	GetTask(id int) (Task, error)
-	UpdateTask(id int, request TaskChange) (Task, error)
+	MarkDone(taskID int, done bool) (core.Task, error)
+	GetTask(id int) (core.Task, error)
+	UpdateTask(id int, request api.TaskChange) (core.Task, error)
 }

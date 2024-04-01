@@ -1,4 +1,4 @@
-package internal
+package rest
 
 import (
 	"net/http"
