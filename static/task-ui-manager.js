@@ -337,6 +337,8 @@ class AddTaskModal {
     }
 
     show() {
+        const form = document.getElementById('addItemForm');
+        form.reset(); // Reset the form to clear any previous values
         this.populateListDropdown(); // Ensure the dropdown is up-to-date
         const modalElement = new bootstrap.Modal(document.getElementById(this.modalId));
         modalElement.show();
@@ -439,10 +441,12 @@ class TaskDetailsModal {
         document.getElementById('taskList').textContent = task.list;
         document.getElementById('taskStatus').textContent = task.done ? 'Completed' : 'Pending';
         document.getElementById('taskCreated').textContent = formatDate(task.created);
-        document.getElementById('taskAllDay').textContent = task.all_day === 'true' ? 'Yes' : 'No';
+
+        const allDay = task.all_day;
+        document.getElementById('taskAllDay').textContent = allDay ? 'Yes' : 'No';
 
         // Conditionally populate and display the "Due On" and "Due By" fields
-        const allDay = task.all_day === 'true';
+
         const dueOn = task.due_on;
         const dueBy = task.due_by;
 
