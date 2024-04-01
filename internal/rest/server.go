@@ -11,6 +11,7 @@ import (
 
 	"github.com/jniewt/gotodo/api"
 	"github.com/jniewt/gotodo/internal/core"
+	"github.com/jniewt/gotodo/internal/repository"
 )
 
 type Server struct {
@@ -82,14 +83,19 @@ func (s *Server) handleListGet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type response struct {
-		List api.ListResponse `json:"list"`
+		List     api.ListResponse `json:"list"`
+		Filtered bool             `json:"filtered"`
 	}
 	l, err := s.orga.GetList(name)
-	if err != nil {
-		s.httpError(w, http.StatusBadRequest, err)
-		return
+	if err == nil {
+		s.jsonResponse(w, http.StatusOK, response{List: api.FromList(l)})
+	} else if !errors.Is(err, repository.ErrListNotFound) {
+		s.httpError(w, http.StatusInternalServerError, err)
 	}
-	s.jsonResponse(w, http.StatusOK, response{List: api.FromList(l)})
+
+	// check if the list is a filtered list
+	// TODO this is not a particularly intuitive flow
+	s.handleFilteredGet(w, r)
 }
 
 // handleFilteredGet returns a virtual list containing the tasks matching the given filter. The response looks exactly

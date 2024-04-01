@@ -1,5 +1,6 @@
 export class ListManager {
     #lists = [];
+    #filteredLists = [];
 
     constructor(apiService) {
         this.apiService = apiService;
@@ -14,10 +15,15 @@ export class ListManager {
         return this.#lists;
     }
 
+    get filteredLists() {
+        return this.#filteredLists;
+    }
+
     async #fetchAllLists() {
         try {
             const data = await this.apiService.fetchAllLists();
             this.#lists = data.lists;
+            this.#filteredLists = data.filtered_lists;
         } catch (error) {
             console.error('Failed to fetch lists:', error);
             throw error; // Ensure UIManager can react to this error

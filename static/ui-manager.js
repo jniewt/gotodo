@@ -35,12 +35,16 @@ export class UIManager {
     // Display lists on the UI
     displayLists() {
         this.dom.listsDisplay.innerHTML = ''; // Clear current lists
+
+        let combinedLists = this.listManager.lists.map(listName => ({ name: listName, filtered: false }))
+            .concat(this.listManager.filteredLists.map(listName => ({ name: listName, filtered: true })));
+
         let lists = this.listManager.lists;
-        lists.forEach((listName) => this.createListElement(listName));
+        combinedLists.forEach(list => this.createListElement(list.name, list.filtered));
     }
 
     // Create a list element
-    createListElement(listName) {
+    createListElement(listName, isFiltered= false) {
         const listElement = document.createElement('a');
         listElement.classList.add('list-group-item', 'list-group-item-action', 'd-flex', 'justify-content-between', 'align-items-center');
         listElement.textContent = listName;
@@ -55,8 +59,11 @@ export class UIManager {
             return false; // Prevent default anchor action
         };
 
-        const dropdown = this.createDropdown(listName);
-        listElement.appendChild(dropdown);
+        if (!isFiltered) {
+            const dropdown = this.createDropdown(listName);
+            listElement.appendChild(dropdown);
+        }
+
         this.dom.listsDisplay.appendChild(listElement);
     }
 

@@ -19,13 +19,9 @@ func (s *Server) routes() {
 	// returns JSON: {lists: [string], filtered_lists: [string]}
 	s.router.HandleFunc("GET /api/list", allowCors(s.handleListGetAll))
 
-	// get a list and its tasks
-	// returns JSON: {list: List}
+	// get a list and its tasks, also works for filtered lists
+	// returns JSON: {list: List, filtered: [bool]}
 	s.router.HandleFunc("GET /api/list/{name}", allowCors(s.handleListGet))
-
-	// get a filtered list and its tasks
-	// returns JSON: {list: List, filtered: true}
-	s.router.HandleFunc("GET /api/filtered/{name}", allowCors(s.handleFilteredGet))
 
 	// create a new list
 	// accepts JSON: ListAdd, returns JSON: {list: List}
