@@ -58,6 +58,7 @@ func addTestData(repo *repository.Repository) {
 		{Title: "Learn JS"},
 		{Title: "Cook dinner", DueOn: todayAtHour(18)},
 		{Title: "Wash the dishes", AllDay: true, DueBy: today()},
+		{Title: "Something overdue", AllDay: true, DueBy: time.Now().Add(-24 * time.Hour)},
 	}
 
 	_, err := repo.AddList("home")

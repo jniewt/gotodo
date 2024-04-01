@@ -62,29 +62,37 @@ export class TaskUIManager {
         itemEl.append(contentContainer);
 
         // check if the task has a due date and add the due date icon and text
-        if (task.due_on || task.due_by) {
+        if (task.due_on || task.due_by || task.done) {
             const dueDateInfo = document.createElement('span');
-            const dueDate = task.due_on || task.due_by;
-            const overdue = isOverdue(new Date(dueDate), new Date(), task.all_day); // TODO make a more elaborate overdue check
+            let dateText, iconClass, textStyle;
 
-            const iconClass = task.due_by ? 'bi-calendar-range' : 'bi-calendar';
+            if (task.done) {
+                // For completed tasks, show the completion date with specific styling, all_day is not important anymore
+                dateText = formatDateHuman(task.done_on);
+                iconClass = 'bi-calendar-check'; // An icon indicating completion
+                textStyle = 'color: grey; text-decoration: line-through;';
+            } else {
+                // Handle due and overdue tasks
+                const dueDate = task.due_on || task.due_by;
+                const overdue = isOverdue(new Date(dueDate), new Date(), task.all_day);
+                dateText = formatDateHuman(dueDate, task.all_day);
+                iconClass = task.due_by ? 'bi-calendar-range' : 'bi-calendar';
+                textStyle = overdue ? 'color: red;' : 'color: inherit;';
+            }
 
             dueDateInfo.innerHTML = `
-                <i class="bi ${iconClass} me-2" style="font-size: 0.75rem; margin-right: 4px;"></i>
-                <span style="display: inline-block; width: 100px;">${formatDateHuman(dueDate, task.all_day)}</span>
-            `;
-            dueDateInfo.style.color = overdue ? 'red' : 'inherit';
-            // Set a smaller font size for the dueDateInfo text
+        <i class="bi ${iconClass} me-2" style="font-size: 0.75rem; margin-right: 4px;"></i>
+        <span style="display: inline-block; width: 100px; ${textStyle}">${dateText}</span>
+    `;
+            // Adjusted font size for the entire dueDateInfo, including the icon and text
             dueDateInfo.style.fontSize = '0.75rem';
 
-            // New: Wrapping content and dueDateInfo into separate flexbox containers
             const wrapper = document.createElement('div');
             wrapper.className = 'd-flex justify-content-between align-items-center flex-grow-1';
-            wrapper.appendChild(contentContainer); // Add the existing content
-            wrapper.appendChild(dueDateInfo); // Add the due date info on the right
+            wrapper.appendChild(contentContainer); // Add the checkbox and title
+            wrapper.appendChild(dueDateInfo); // Add the due date or done date info
 
-
-            itemEl.appendChild(wrapper); // Now, append the wrapper instead of individual elements
+            itemEl.appendChild(wrapper);
         }
 
         return itemEl;
@@ -159,8 +167,11 @@ export class TaskUIManager {
 
     initAddTaskButton() {
         const addTaskButton = document.createElement('button');
-        addTaskButton.textContent = 'Add Task';
-        addTaskButton.className = 'btn btn-primary';
+        addTaskButton.textContent = '+';
+        addTaskButton.className = 'btn btn-primary rounded-circle';
+        addTaskButton.setAttribute('title', 'Add Task'); // Tooltip text
+        addTaskButton.setAttribute('data-bs-toggle', 'tooltip'); // Bootstrap tooltip
+        addTaskButton.setAttribute('data-bs-placement', 'bottom'); // Tooltip position
         addTaskButton.addEventListener('click', () => {
             this.addTaskModal.setCurrentList(this.currentListName); // Update current list before showing
             this.addTaskModal.show();
