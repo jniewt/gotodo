@@ -89,8 +89,10 @@ func (s *Server) handleListGet(w http.ResponseWriter, r *http.Request) {
 	l, err := s.orga.GetList(name)
 	if err == nil {
 		s.jsonResponse(w, http.StatusOK, response{List: api.FromList(l)})
+		return
 	} else if !errors.Is(err, repository.ErrListNotFound) {
 		s.httpError(w, http.StatusInternalServerError, err)
+		return
 	}
 
 	// check if the list is a filtered list

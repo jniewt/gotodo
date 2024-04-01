@@ -93,10 +93,10 @@ func addTestData(repo *repository.Repository) {
 	// create filtered list that contains all undone tasks from all lists that are either due on today, due by in the
 	// next n days or have no due date
 	soonFilters := []filter.Node{
-		filter.Pending(),
+		filter.PendingOrDoneToday(),
 		filter.Due(
 			filter.DueOnToday(),
-			filter.DueByInDays(1),
+			filter.DueByInDays(14),
 			filter.NoDueDate(),
 		),
 	}

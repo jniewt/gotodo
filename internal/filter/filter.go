@@ -25,10 +25,26 @@ func NewFilter(nodes ...Node) Node {
 	}
 }
 
+// Pending creates a filter that checks if a task is not yet done.
 func Pending() Node {
 	return &ComparisonOperator{
 		CompareTo: func(task core.Task) bool {
 			return !task.Done
+		},
+	}
+}
+
+// PendingOrDoneToday creates a filter that accepts undone tasks, and done tasks if they were done today.
+func PendingOrDoneToday() Node {
+	return &LogicalOperator{
+		Operator: OpOr,
+		Children: []Node{
+			Pending(),
+			&ComparisonOperator{
+				CompareTo: func(task core.Task) bool {
+					return task.Done && isOnDay(task.DoneOn, 0, time.Now())
+				},
+			},
 		},
 	}
 }
