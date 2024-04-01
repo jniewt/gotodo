@@ -40,9 +40,9 @@ export class TaskUIManager {
         const titleSpan = this.createTitleSpan(task);
 
         checkbox.addEventListener('change', () => this.handleTaskStatusChange(task, checkbox, titleSpan));
-
         // Prevent event from triggering when clicking on the checkbox
         checkbox.onclick = event => event.stopPropagation();
+
         itemEl.addEventListener('click', () => {
             this.taskDetailsModal.setCurrentTask(task); // Set the current task
             this.taskDetailsModal.show(); // Show the modal with task details
@@ -56,7 +56,37 @@ export class TaskUIManager {
             this.contextMenu.style.display = 'block';
         });
 
-        itemEl.append(checkbox, titleSpan);
+        const contentContainer = document.createElement('div');
+        contentContainer.className = 'd-flex align-items-center flex-grow-1';
+        contentContainer.append(checkbox, titleSpan);
+        itemEl.append(contentContainer);
+
+        // check if the task has a due date and add the due date icon and text
+        if (task.due_on || task.due_by) {
+            const dueDateInfo = document.createElement('span');
+            const dueDate = task.due_on || task.due_by;
+            const overdue = isOverdue(new Date(dueDate), new Date(), task.all_day); // TODO make a more elaborate overdue check
+
+            const iconClass = task.due_by ? 'bi-calendar-range' : 'bi-calendar';
+
+            dueDateInfo.innerHTML = `
+                <i class="bi ${iconClass} me-2" style="font-size: 0.75rem; margin-right: 4px;"></i>
+                <span style="display: inline-block; width: 100px;">${formatDateHuman(dueDate, task.all_day)}</span>
+            `;
+            dueDateInfo.style.color = overdue ? 'red' : 'inherit';
+            // Set a smaller font size for the dueDateInfo text
+            dueDateInfo.style.fontSize = '0.75rem';
+
+            // New: Wrapping content and dueDateInfo into separate flexbox containers
+            const wrapper = document.createElement('div');
+            wrapper.className = 'd-flex justify-content-between align-items-center flex-grow-1';
+            wrapper.appendChild(contentContainer); // Add the existing content
+            wrapper.appendChild(dueDateInfo); // Add the due date info on the right
+
+
+            itemEl.appendChild(wrapper); // Now, append the wrapper instead of individual elements
+        }
+
         return itemEl;
     }
 
@@ -483,5 +513,19 @@ class TaskDetailsModal {
 
     hide() {
         this.modalElement.hide();
+    }
+}
+
+function isOverdue(dueDate, currentDate, ignoreTime = false) {
+    if (ignoreTime) {
+        // Remove the time component from both dates
+        const dueDateWithoutTime = new Date(dueDate.setHours(0, 0, 0, 0));
+        const currentDateWithoutTime = new Date(currentDate.setHours(0, 0, 0, 0));
+
+        // Compare only the dates (day-wise)
+        return dueDateWithoutTime < currentDateWithoutTime;
+    } else {
+        // Compare including the time
+        return new Date(dueDate) < new Date(currentDate);
     }
 }
