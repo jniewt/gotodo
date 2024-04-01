@@ -64,13 +64,14 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleListGetAll(w http.ResponseWriter, _ *http.Request) {
-	lists := s.orga.Lists()
+	lists, filtered := s.orga.Lists()
 
 	type response struct {
-		Lists []string `json:"lists"`
+		Lists         []string `json:"lists"`
+		FilteredLists []string `json:"filtered_lists"`
 	}
 
-	s.jsonResponse(w, http.StatusOK, response{Lists: lists})
+	s.jsonResponse(w, http.StatusOK, response{Lists: lists, FilteredLists: filtered})
 }
 
 func (s *Server) handleListGet(w http.ResponseWriter, r *http.Request) {
@@ -89,6 +90,35 @@ func (s *Server) handleListGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.jsonResponse(w, http.StatusOK, response{List: api.FromList(l)})
+}
+
+// handleFilteredGet returns a virtual list containing the tasks matching the given filter. The response looks exactly
+// like a normal list response but has the "filtered" field set to true.
+func (s *Server) handleFilteredGet(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	if name == "" {
+		s.httpError(w, http.StatusBadRequest, errors.New("missing list name"))
+		return
+	}
+
+	type response struct {
+		List     api.ListResponse `json:"list"`
+		Filtered bool             `json:"filtered"`
+	}
+
+	tasks, err := s.orga.GetFilteredTasks(name)
+	if err != nil {
+		s.httpError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	l := core.List{
+		Name:  name,
+		Items: tasks,
+	}
+
+	s.jsonResponse(w, http.StatusOK, response{List: api.FromList(l), Filtered: true})
+
 }
 
 func (s *Server) handleListPost(w http.ResponseWriter, r *http.Request) {
@@ -233,7 +263,7 @@ func (s *Server) handleTaskDel(w http.ResponseWriter, r *http.Request) {
 }
 
 type Organiser interface {
-	Lists() []string
+	Lists() ([]string, []string)
 	GetList(name string) (core.List, error)
 	AddList(name string) (core.List, error)
 	DelList(name string) error
@@ -241,5 +271,6 @@ type Organiser interface {
 	DelItem(id int) error
 	MarkDone(taskID int, done bool) (core.Task, error)
 	GetTask(id int) (core.Task, error)
+	GetFilteredTasks(name string) ([]*core.Task, error)
 	UpdateTask(id int, request api.TaskChange) (core.Task, error)
 }

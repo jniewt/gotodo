@@ -11,6 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/jniewt/gotodo/api"
+	"github.com/jniewt/gotodo/internal/filter"
 	"github.com/jniewt/gotodo/internal/repository"
 	"github.com/jniewt/gotodo/internal/rest"
 )
@@ -87,6 +88,21 @@ func addTestData(repo *repository.Repository) {
 		if err != nil {
 			panic(err)
 		}
+	}
+
+	// create filtered list that contains all undone tasks from all lists that are either due on today, due by in the
+	// next n days or have no due date
+	soonFilters := []filter.Node{
+		filter.Pending(),
+		filter.Due(
+			filter.DueOnToday(),
+			filter.DueByInDays(1),
+			filter.NoDueDate(),
+		),
+	}
+	_, err = repo.AddFilteredList("soon", soonFilters...)
+	if err != nil {
+		panic(err)
 	}
 }
 

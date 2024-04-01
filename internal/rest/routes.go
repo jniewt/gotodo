@@ -15,13 +15,17 @@ func (s *Server) routes() {
 	// allow CORS preflight requests for all routes under /api
 	s.router.Handle("OPTIONS /api/*", allowCors(func(_ http.ResponseWriter, _ *http.Request) {}))
 
-	// get names of all lists TODO shouldn't it return the lists themselves?
-	// returns JSON: {lists: [string]}
+	// get names of all lists and filtered lists
+	// returns JSON: {lists: [string], filtered_lists: [string]}
 	s.router.HandleFunc("GET /api/list", allowCors(s.handleListGetAll))
 
-	// get a list
+	// get a list and its tasks
 	// returns JSON: {list: List}
 	s.router.HandleFunc("GET /api/list/{name}", allowCors(s.handleListGet))
+
+	// get a filtered list and its tasks
+	// returns JSON: {list: List, filtered: true}
+	s.router.HandleFunc("GET /api/filtered/{name}", allowCors(s.handleFilteredGet))
 
 	// create a new list
 	// accepts JSON: ListAdd, returns JSON: {list: List}

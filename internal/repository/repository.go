@@ -6,11 +6,13 @@ import (
 
 	"github.com/jniewt/gotodo/api"
 	"github.com/jniewt/gotodo/internal/core"
+	"github.com/jniewt/gotodo/internal/filter"
 )
 
 // Repository provides access to the todo list storage.
 type Repository struct {
-	lists []*core.List
+	lists    []*core.List
+	filtered []filter.List
 }
 
 // NewRepository creates a new repository.
@@ -31,13 +33,17 @@ func (r *Repository) GetList(name string) (core.List, error) {
 	return *list, err
 }
 
-// Lists returns the names of all lists.
-func (r *Repository) Lists() []string {
+// Lists returns the names of all lists and filtered lists.
+func (r *Repository) Lists() ([]string, []string) {
 	lists := make([]string, 0, len(r.lists))
 	for _, list := range r.lists {
 		lists = append(lists, list.Name)
 	}
-	return lists
+	filtered := make([]string, 0, len(r.filtered))
+	for _, list := range r.filtered {
+		filtered = append(filtered, list.Name)
+	}
+	return lists, filtered
 }
 
 // AddList adds a new list.
@@ -61,6 +67,40 @@ func (r *Repository) DelList(name string) error {
 		}
 	}
 	return ErrListNotFound
+}
+
+// AddFilteredList adds a new virtual list.
+func (r *Repository) AddFilteredList(name string, filters ...filter.Node) (filter.List, error) {
+	for _, l := range r.filtered {
+		if l.Name == name {
+			return filter.List{}, ErrListExists
+		}
+	}
+	fl := filter.List{Name: name, Filter: filter.NewFilter(filters...)}
+	r.filtered = append(r.filtered, fl)
+	return fl, nil
+}
+
+// GetFilteredTasks returns the tasks for a virtual list.
+func (r *Repository) GetFilteredTasks(name string) ([]*core.Task, error) {
+	for _, l := range r.filtered {
+		if l.Name == name {
+			return r.filterTasks(l.Filter), nil
+		}
+	}
+	return nil, ErrListNotFound
+}
+
+func (r *Repository) filterTasks(f filter.Node) []*core.Task {
+	tasks := make([]*core.Task, 0)
+	for _, list := range r.lists {
+		for _, task := range list.Items {
+			if f.Evaluate(*task) {
+				tasks = append(tasks, task)
+			}
+		}
+	}
+	return tasks
 }
 
 func (r *Repository) AddItem(list string, task api.TaskAdd) (core.Task, error) {
