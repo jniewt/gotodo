@@ -1,3 +1,4 @@
+tasks.yml
 # Hack that matches all extensionless files (ignore everything, but not directories, and not files with .)
 *
 !*/

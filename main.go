@@ -14,6 +14,7 @@ import (
 	"github.com/jniewt/gotodo/internal/filter"
 	"github.com/jniewt/gotodo/internal/repository"
 	"github.com/jniewt/gotodo/internal/rest"
+	"github.com/jniewt/gotodo/internal/storage"
 )
 
 //go:embed static
@@ -25,7 +26,9 @@ func main() {
 	logger.SetFormatter(&log.TextFormatter{FullTimestamp: true})
 
 	var web string
+	var demo bool
 	flag.StringVar(&web, "addr", ":8080", "address and port to listen on (<addr>:<port>)")
+	flag.BoolVar(&demo, "demo", false, "add demo data to the repository")
 	flag.Parse()
 
 	// Create a subdirectory in the embedded filesystem
@@ -35,10 +38,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	repo := repository.NewRepository()
+	var repo *repository.Repository
 
 	// TODO remove this in production
-	addTestData(repo)
+	if demo {
+		store := &storage.Fake{}
+		repo = repository.NewRepository(store)
+		addTestData(repo)
+	} else {
+		store := storage.NewFile("tasks.yml")
+		repo = repository.NewRepository(store)
+	}
 
 	server := rest.NewServer(staticFS, repo, log.NewEntry(logger))
 
@@ -61,13 +71,13 @@ func addTestData(repo *repository.Repository) {
 		{Title: "Something overdue", AllDay: true, DueBy: time.Now().Add(-24 * time.Hour)},
 	}
 
-	_, err := repo.AddList("home")
+	_, err := repo.AddList("Home")
 	if err != nil {
 		panic(err)
 	}
 
 	for _, todo := range tasks {
-		_, err = repo.AddItem("home", todo)
+		_, err = repo.AddItem("Home", todo)
 		if err != nil {
 			panic(err)
 		}
@@ -79,13 +89,13 @@ func addTestData(repo *repository.Repository) {
 		{Title: "Call client", DueOn: timeAtHourInDays(9, 3)},
 	}
 
-	_, err = repo.AddList("work")
+	_, err = repo.AddList("Work")
 	if err != nil {
 		panic(err)
 	}
 
 	for _, t := range tasks {
-		_, err = repo.AddItem("work", t)
+		_, err = repo.AddItem("Work", t)
 		if err != nil {
 			panic(err)
 		}
@@ -101,7 +111,7 @@ func addTestData(repo *repository.Repository) {
 			filter.NoDueDate(),
 		),
 	}
-	_, err = repo.AddFilteredList("soon", soonFilters...)
+	_, err = repo.AddFilteredList("Soon", soonFilters...)
 	if err != nil {
 		panic(err)
 	}

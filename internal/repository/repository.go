@@ -9,20 +9,44 @@ import (
 	"github.com/jniewt/gotodo/internal/filter"
 )
 
-// Repository provides access to the todo list storage.
+// Storage defines the interface for task list storage operations.
+type Storage interface {
+	GetList(name string) (*core.List, error)
+	GetAllLists() ([]*core.List, error)
+	AddList(list *core.List) error
+	UpdateList(name string, list *core.List) error
+	DeleteList(name string) error
+	GetFiltered(name string) (*filter.List, error)
+	GetAllFiltered() ([]*filter.List, error)
+	AddFiltered(list *filter.List) error
+	DeleteFiltered(name string) error
+}
+
+// Repository provides access to the task list storage. It keeps a cache of all lists and filtered lists to avoid
+// unnecessary reads.
 type Repository struct {
 	lists    []*core.List
-	filtered []filter.List
+	filtered []*filter.List
+	store    Storage
 }
 
 // NewRepository creates a new repository.
-func NewRepository() *Repository {
-	return &Repository{}
+func NewRepository(store Storage) *Repository {
+	lists, err := store.GetAllLists()
+	if err != nil {
+		panic(fmt.Sprintf("failed to load lists: %v", err))
+	}
+	filtered, err := store.GetAllFiltered()
+	if err != nil {
+		panic(fmt.Sprintf("failed to load filtered lists: %v", err))
+	}
+	return &Repository{
+		lists:    lists,
+		filtered: filtered,
+		store:    store,
+	}
+
 }
-
-var ErrListNotFound = fmt.Errorf("list not found")
-
-var ErrListExists = fmt.Errorf("list already exists")
 
 // GetList returns a list by name.
 func (r *Repository) GetList(name string) (core.List, error) {
@@ -54,17 +78,27 @@ func (r *Repository) AddList(name string) (core.List, error) {
 		}
 	}
 	l := core.List{Name: name}
-	r.lists = append(r.lists, &l)
+	err := r.store.AddList(&l)
+	if err != nil {
+		return core.List{}, err
+	}
+
+	err = r.updateListCache()
+	if err != nil {
+		return core.List{}, fmt.Errorf("failed to update list cache: %w", err)
+	}
 	return l, nil
 }
 
 // DelList deletes a list.
 func (r *Repository) DelList(name string) error {
-	for i, list := range r.lists {
-		if list.Name == name {
-			r.lists = append(r.lists[:i], r.lists[i+1:]...)
-			return nil
-		}
+	err := r.store.DeleteList(name)
+	if err != nil {
+		return err
+	}
+	err = r.updateListCache()
+	if err != nil {
+		return fmt.Errorf("failed to update list cache: %w", err)
 	}
 	return ErrListNotFound
 }
@@ -76,9 +110,18 @@ func (r *Repository) AddFilteredList(name string, filters ...filter.Node) (filte
 			return filter.List{}, ErrListExists
 		}
 	}
-	fl := filter.List{Name: name, Filter: filter.NewFilter(filters...)}
-	r.filtered = append(r.filtered, fl)
-	return fl, nil
+	fl := &filter.List{Name: name, Filter: filter.NewFilter(filters...)}
+	err := r.store.AddFiltered(fl)
+	if err != nil {
+		return filter.List{}, err
+	}
+
+	err = r.updateFilteredListCache()
+	if err != nil {
+		return filter.List{}, fmt.Errorf("failed to update filtered list cache: %w", err)
+	}
+
+	return *fl, nil
 }
 
 // GetFilteredTasks returns the tasks for a virtual list.
@@ -89,18 +132,6 @@ func (r *Repository) GetFilteredTasks(name string) ([]*core.Task, error) {
 		}
 	}
 	return nil, ErrListNotFound
-}
-
-func (r *Repository) filterTasks(f filter.Node) []*core.Task {
-	tasks := make([]*core.Task, 0)
-	for _, list := range r.lists {
-		for _, task := range list.Items {
-			if f.Evaluate(*task) {
-				tasks = append(tasks, task)
-			}
-		}
-	}
-	return tasks
 }
 
 func (r *Repository) AddItem(list string, task api.TaskAdd) (core.Task, error) {
@@ -114,7 +145,7 @@ func (r *Repository) AddItem(list string, task api.TaskAdd) (core.Task, error) {
 	}
 
 	item := core.Task{
-		ID:      r.NewID(),
+		ID:      r.newID(),
 		Title:   task.Title,
 		List:    list,
 		AllDay:  task.AllDay,
@@ -132,18 +163,40 @@ func (r *Repository) AddItem(list string, task api.TaskAdd) (core.Task, error) {
 	}
 
 	l.Items = append(l.Items, &item)
+
+	err = r.store.UpdateList(list, l)
+	if err != nil {
+		return core.Task{}, err
+	}
+
+	err = r.updateListCache()
+	if err != nil {
+		return core.Task{}, fmt.Errorf("failed to update list cache: %w", err)
+	}
+
 	return item, nil
 }
 
 func (r *Repository) DelItem(id int) error {
 	for _, list := range r.lists {
 		for i, item := range list.Items {
-			if item.ID == id {
-				list.Items = append(list.Items[:i], list.Items[i+1:]...)
-				return nil
+			if item.ID != id {
+				continue
 			}
+			list.Items = append(list.Items[:i], list.Items[i+1:]...)
+			err := r.store.UpdateList(list.Name, list)
+			if err != nil {
+				return err
+			}
+
+			err = r.updateListCache()
+			if err != nil {
+				return fmt.Errorf("failed to update list cache: %w", err)
+			}
+			return nil
 		}
 	}
+
 	return fmt.Errorf("item not found")
 }
 
@@ -179,6 +232,20 @@ func (r *Repository) UpdateTask(id int, change api.TaskChange) (core.Task, error
 	t.DueBy = change.DueBy
 	t.DueOn = change.DueOn
 
+	list, err := r.getList(t.List)
+	if err != nil {
+		panic(fmt.Sprintf("list %v for task %d not found", t.List, id))
+	}
+	err = r.store.UpdateList(list.Name, list)
+	if err != nil {
+		return core.Task{}, err
+	}
+
+	err = r.updateListCache()
+	if err != nil {
+		return core.Task{}, fmt.Errorf("failed to update list cache: %w", err)
+	}
+
 	return *t, nil
 }
 
@@ -212,6 +279,20 @@ func (r *Repository) MoveTask(id int, list string) (core.Task, error) {
 	// update task list
 	task.List = list
 
+	err = r.store.UpdateList(listFrom.Name, listFrom)
+	if err != nil {
+		return core.Task{}, err
+	}
+	err = r.store.UpdateList(listTo.Name, listTo)
+	if err != nil {
+		return core.Task{}, err
+	}
+
+	err = r.updateListCache()
+	if err != nil {
+		return core.Task{}, fmt.Errorf("failed to update list cache: %w", err)
+	}
+
 	return *task, nil
 }
 
@@ -226,7 +307,47 @@ func (r *Repository) MarkDone(id int, done bool) (core.Task, error) {
 	} else {
 		task.DoneOn = time.Time{}
 	}
+
+	list, err := r.getList(task.List)
+	if err != nil {
+		panic(fmt.Sprintf("list %v for task %d not found", task.List, id))
+	}
+	err = r.store.UpdateList(list.Name, list)
+	if err != nil {
+		return core.Task{}, err
+	}
+
+	err = r.updateListCache()
+	if err != nil {
+		return core.Task{}, fmt.Errorf("failed to update list cache: %w", err)
+	}
+
 	return *task, nil
+}
+
+// newID returns a new unique ID. This is a naive implementation that iterates over all items to find the highest ID.
+func (r *Repository) newID() int {
+	id := 0
+	for _, list := range r.lists {
+		for _, item := range list.Items {
+			if item.ID > id {
+				id = item.ID
+			}
+		}
+	}
+	return id + 1
+}
+
+func (r *Repository) filterTasks(f filter.Node) []*core.Task {
+	tasks := make([]*core.Task, 0)
+	for _, list := range r.lists {
+		for _, task := range list.Items {
+			if f.Evaluate(*task) {
+				tasks = append(tasks, task)
+			}
+		}
+	}
+	return tasks
 }
 
 func (r *Repository) getList(name string) (*core.List, error) {
@@ -249,15 +370,25 @@ func (r *Repository) getTask(id int) (*core.Task, error) {
 	return nil, fmt.Errorf("item not found")
 }
 
-// NewID returns a new unique ID. This is a naive implementation that iterates over all items to find the highest ID.
-func (r *Repository) NewID() int {
-	id := 0
-	for _, list := range r.lists {
-		for _, item := range list.Items {
-			if item.ID > id {
-				id = item.ID
-			}
-		}
+func (r *Repository) updateListCache() error {
+	lists, err := r.store.GetAllLists()
+	if err != nil {
+		return err
 	}
-	return id + 1
+	r.lists = lists
+	return nil
 }
+
+func (r *Repository) updateFilteredListCache() error {
+	filtered, err := r.store.GetAllFiltered()
+	if err != nil {
+		return err
+	}
+	r.filtered = filtered
+	return nil
+}
+
+var (
+	ErrListNotFound = fmt.Errorf("list not found")
+	ErrListExists   = fmt.Errorf("list already exists")
+)

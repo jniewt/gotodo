@@ -17,9 +17,16 @@
         <!-- Side pane for lists -->
         <div class="col-md-3 bg-light border-right">
             <h4 class="mt-2">Lists</h4>
-            <div id="listsDisplay" class="list-group"></div>
+            <div id="listsDisplay" class="list-group list-group-flush list-group-item-action list-group-item-light"></div>
             <hr>
-            <button id="createListBtn" class="btn btn-primary my-2" data-bs-toggle="modal" data-bs-target="#addListModal">New List</button>
+            <div id="addDisplay" class="list-group list-group-flush list-group-item-action list-group-item-light">
+                <a id="createListBtn" href="#" class="list-group-item list-group-item-action d-flex " data-bs-toggle="modal" data-bs-target="#addListModal">
+                    <i class="bi bi-plus-circle-fill me-2"></i> New List
+                </a>
+                <a id="createFilteredListBtn" href="#" class="list-group-item list-group-item-action d-flex">
+                    <i class="bi bi-filter-circle-fill me-2"></i> New Filtered List
+                </a>
+            </div>
             <hr>
         </div>
         <!-- Main pane for list details -->
