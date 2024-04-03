@@ -4,7 +4,7 @@ import {formatDate, formatDateHuman} from "./format-date.js";
 export class TaskUIManager {
     listManager;
     addTaskModal;
-    taskDetailsModal = new TaskDetailsModal();
+    taskDetailsModal = new TaskDetailsModal(this.listManager);
     dom;
     currentListName = '';
     showAlert;
@@ -16,6 +16,8 @@ export class TaskUIManager {
         this.showAlert = showAlert;
         this.onTaskListChange = onTaskListChange;
         this.addTaskModal = new AddTaskModal(listManager, onTaskListChange, showAlert);
+        this.taskDetailsModal.setListManager(listManager);
+        this.taskDetailsModal.setTaskUpdateCallback(onTaskListChange);
 
         this.init();
     }
@@ -437,7 +439,8 @@ class AddTaskModal {
 }
 
 class TaskDetailsModal {
-    constructor() {
+    constructor(listManager) {
+        this.listManager = listManager;
         this.currentTask = null;
         this.modalId = 'taskDetailsModal';
         this.initModal();
@@ -454,8 +457,10 @@ class TaskDetailsModal {
                         </div>
                         <div class="modal-body">
                             <dl class="row">
-                                <dt class="col-sm-4">Title:</dt>
-                                <dd class="col-sm-8" id="taskTitle"></dd>
+                        <dt class="col-sm-4">Title:</dt>
+                        <dd class="col-sm-8">
+                            <input type="text" id="taskTitleInput" name="title" class="form-control">
+                        </dd>
 
                                 <dt class="col-sm-4">List:</dt>
                                 <dd class="col-sm-8" id="taskList"></dd>
@@ -480,7 +485,8 @@ class TaskDetailsModal {
                             </dl>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-primary" id="updateTaskBtn">OK</button>
                         </div>
                     </div>
                 </div>
@@ -491,6 +497,14 @@ class TaskDetailsModal {
         this.setupEventListeners();
     }
 
+    setListManager(listManager) {
+        this.listManager = listManager;
+    }
+
+    setTaskUpdateCallback(callback) {
+        this.onTaskUpdated = callback;
+    }
+
     setupEventListeners() {
         const modalElement = document.getElementById(this.modalId);
 
@@ -498,6 +512,7 @@ class TaskDetailsModal {
         modalElement.addEventListener('hidden.bs.modal', () => {
             this.hide();
         });
+        document.getElementById('updateTaskBtn').addEventListener('click', this.handleUpdateTask.bind(this));
     }
 
     setCurrentTask(task) {
@@ -506,7 +521,7 @@ class TaskDetailsModal {
     }
 
     populateModalFields(task) {
-        document.getElementById('taskTitle').textContent = task.title;
+        document.getElementById('taskTitleInput').value = task.title;
         document.getElementById('taskList').textContent = task.list;
         document.getElementById('taskStatus').textContent = task.done ? 'Completed' : 'Pending';
         document.getElementById('taskCreated').textContent = formatDate(task.created);
@@ -534,6 +549,20 @@ class TaskDetailsModal {
 
         // Adjust visibility of date labels based on data
         this.adjustDateVisibility(task);
+    }
+
+    async handleUpdateTask() {
+        const title = document.getElementById('taskTitleInput').value;
+        const task = this.currentTask;
+        task.title = title;
+
+        try {
+            await this.listManager.updateTask(task.id, task);
+            this.hide();
+            this.onTaskUpdated(task.list); // Notify the parent UI manager of the change
+        } catch (error) {
+            console.error('Error updating task:', error);
+        }
     }
 
     adjustDateVisibility(task) {
