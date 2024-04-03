@@ -290,6 +290,7 @@ class AddTaskModal {
                 dateTimeOptions.classList.remove('d-none');
                 // Check the 'All Day' checkbox by default
                 allDayCheckbox.checked = true;
+                dueDateTimeInput.type = 'date'; // Default to date input
 
                 // Determine today's date
                 const today = new Date();
@@ -298,7 +299,6 @@ class AddTaskModal {
                 // Set the input value to today, adjusting format based on 'All Day'
                 dueDateTimeInput.value = allDayCheckbox.checked ? todayFormattedDate : todayFormattedDateTime;
                 // Since 'All Day' is checked by default, set type to 'date'
-                dueDateTimeInput.type = 'date';
             }
         });
 
@@ -380,6 +380,18 @@ class AddTaskModal {
     show() {
         const form = document.getElementById('addItemForm');
         form.reset(); // Reset the form to clear any previous values
+        document.getElementById('taskTitleInput').value = '';
+        document.getElementById('dueDateTypeSelect').value = 'none'; // Reset due date type
+        document.getElementById('dateTimeOptions').classList.add('d-none');
+        document.getElementById('taskAllDayInput').checked = true; // Reset 'All Day' checkbox
+        document.getElementById('taskDueDateTime').value = ''; // Reset due date/time input
+        document.getElementById('taskDueDateTime').type = 'date'; // Reset input type to 'date' (default
+        form.classList.remove('was-validated'); // Remove validation class to reset the form state
+
+        // Also hide the alert box
+        const alertBox = document.getElementById('formErrorAlert');
+        alertBox.classList.add('d-none');
+        alertBox.textContent = ''; // Clear the error message
         this.populateListDropdown(); // Ensure the dropdown is up-to-date
         const modalElement = new bootstrap.Modal(document.getElementById(this.modalId));
         modalElement.show();
