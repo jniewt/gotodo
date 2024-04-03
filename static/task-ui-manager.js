@@ -2,34 +2,61 @@ import { sortByTitleThenDone, sortTasks } from './sort-tasks.js';
 import {formatDate, formatDateHuman} from "./format-date.js";
 
 export class TaskUIManager {
+    listManager;
+    addTaskModal;
+    taskDetailsModal = new TaskDetailsModal();
+    dom;
+    currentListName = '';
+    showAlert;
+    onTaskListChange;
+
     constructor(listManager, domElements, onTaskListChange = () => {}, showAlert = (msg, type) => {console.log(msg)}) {
         this.listManager = listManager;
-        this.addTaskModal = new AddTaskModal(listManager, onTaskListChange, showAlert);
-        this.taskDetailsModal = new TaskDetailsModal();
         this.dom = domElements;
-        this.currentListName = '';
         this.showAlert = showAlert;
-        this.onTaskListChange = onTaskListChange; // Callback when task list changes
+        this.onTaskListChange = onTaskListChange;
+        this.addTaskModal = new AddTaskModal(listManager, onTaskListChange, showAlert);
+
+        this.init();
+    }
+
+    init() {
         this.initContextMenu();
         this.initAddTaskButton();
     }
 
     displayTasks(listName, tasks) {
         this.currentListName = listName;
-        const { tasksDisplay } = this.dom;
-        tasksDisplay.innerHTML = `<h3>${listName}</h3>`;
+        this.clearTasksDisplay();
+        this.setListNameHeader(listName);
 
         if (!tasks || tasks.length === 0) {
-            tasksDisplay.innerHTML += '<p>No tasks in this list.</p>';
+            this.showNoTasksMessage();
             return;
         }
 
-        let sorted = sortTasks(tasks, sortByTitleThenDone);
+        this.displaySortedTasks(tasks);
+    }
 
+    clearTasksDisplay() {
+        const { tasksDisplay } = this.dom;
+        tasksDisplay.innerHTML = '';
+    }
+
+    setListNameHeader(listName) {
+        this.dom.tasksDisplay.innerHTML += `<h3>${listName}</h3>`;
+    }
+
+    showNoTasksMessage() {
+        this.dom.tasksDisplay.innerHTML += '<p>No tasks in this list.</p>';
+    }
+
+    displaySortedTasks(tasks) {
+        let sorted = sortTasks(tasks, sortByTitleThenDone);
         const taskList = document.createElement('ul');
         taskList.className = 'list-group';
         sorted.forEach(task => taskList.appendChild(this.createTaskElement(task)));
-        tasksDisplay.appendChild(taskList);
+        this.dom.tasksDisplay.appendChild(taskList);
     }
 
     createTaskElement(task) {
@@ -98,11 +125,11 @@ export class TaskUIManager {
         return itemEl;
     }
 
-    createCheckbox(task) {
+    createCheckbox({ done }) {
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.className = 'me-2';
-        checkbox.checked = task.done;
+        checkbox.checked = done;
         return checkbox;
     }
 
@@ -366,7 +393,6 @@ class AddTaskModal {
         try {
             console.log('Adding task to list:', listName, requestPayload)
             await this.listManager.createTask(listName, requestPayload);
-            this.showAlert('Task added successfully', 'success');
             this.hide(); // Hide the modal
             this.onTaskAdded(listName); // Trigger the callback on added task
             this.showAlertOutside('Task added', 'success');
@@ -399,17 +425,7 @@ class AddTaskModal {
 
     hide() {
         const modalElement = bootstrap.Modal.getInstance(document.getElementById(this.modalId));
-        const form = document.getElementById('addItemForm');
-        if (modalElement) {
-            modalElement.hide();
-            form.reset();
-            document.getElementById('taskTitleInput').value = '';
-            form.classList.remove('was-validated'); // Remove validation class to reset the form state
-            // Also hide the alert box when modal is closed or the task is successfully added
-            const alertBox = document.getElementById('formErrorAlert');
-            alertBox.classList.add('d-none');
-            alertBox.textContent = ''; // Clear the error message
-        }
+        modalElement.hide();
     }
 
     showAlert(message, type) {
