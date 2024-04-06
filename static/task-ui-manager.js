@@ -1,12 +1,12 @@
 import {sortByTitleThenDone, sortTasks} from './sort-tasks.js';
-import {formatDate, formatDateHuman} from "./format-date.js";
+import {formatDate, formatDateForm, formatDateHuman} from "./format-date.js";
 
 export class TaskUIManager {
     listManager;
     addTaskModal;
     // TODO why does this have to be initialized here, and addTaskModal can be initialized in the constructor?
     // otherwise the task title field is not getting populated
-    taskDetailsModal = new TaskDetailsModal(this.listManager);
+    taskDetailsModal;
     dom;
     currentListName = '';
     showAlert;
@@ -18,6 +18,7 @@ export class TaskUIManager {
         this.showAlert = showAlert;
         this.onTaskListChange = onTaskListChange;
         this.addTaskModal = new AddTaskModal(listManager, onTaskListChange, showAlert);
+        this.taskDetailsModal = new TaskDetailsModal(this.listManager, this.showAlert);
         this.taskDetailsModal.setListManager(listManager);
         this.taskDetailsModal.setTaskUpdateCallback(onTaskListChange);
 
@@ -263,28 +264,13 @@ class AddTaskModal {
         })
 
         // Show date/time options based on due date type selection
-        dueDateTypeSelect.addEventListener('change', function() {
-            const dateTimeOptions = document.getElementById('dateTimeOptions');
-            const timeOptions = document.getElementById('timeOptions');
-            const dueDateInput = document.getElementById('taskDueDate');
-            const allDayCheckbox = document.getElementById('taskAllDayInput');
-
-            if (this.value === 'none') {
-                dateTimeOptions.classList.add('d-none');
-            } else {
-                // Remove 'd-none' to show the options
-                dateTimeOptions.classList.remove('d-none');
-                // Check the 'All Day' checkbox by default
-                allDayCheckbox.checked = true;
-                dueDateInput.type = 'date'; // Default to date input
-                timeOptions.classList.add('d-none'); // Hide the time input by default
-
-                // Determine today's date
-                const today = new Date();
-                // Set the input value to today, adjusting format based on 'All Day'
-                dueDateInput.value = today.toISOString().split('T')[0];
-            }
-        });
+        handleDueTypeChange(
+            document.getElementById('dueDateTypeSelect'),
+            'dateTimeOptions',
+            'timeOptions',
+            'taskDueDate',
+            'taskAllDayInput'
+        );
 
         document.getElementById('taskAllDayInput').addEventListener('change', function() {
             const timeOptions = document.getElementById('timeOptions');
@@ -384,60 +370,17 @@ class AddTaskModal {
 }
 
 class TaskDetailsModal {
-    constructor(listManager) {
+    constructor(listManager, showAlert) {
         this.listManager = listManager;
         this.currentTask = null;
         this.modalId = 'taskDetailsModal';
+        this.showAlertOutside = showAlert;
+        this.modalElement = null;
+
         this.initModal();
     }
 
     initModal() {
-        const modalHTML = `
-            <div class="modal fade" id="taskDetailsModal" tabindex="-1" aria-labelledby="taskDetailsModalLabel" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="taskDetailsModalLabel">Task Details</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <dl class="row">
-                        <dt class="col-sm-4">Title:</dt>
-                        <dd class="col-sm-8">
-                            <input type="text" id="taskTitleInput" name="title" class="form-control">
-                        </dd>
-
-                                <dt class="col-sm-4">List:</dt>
-                                <dd class="col-sm-8" id="taskList"></dd>
-
-                                <dt class="col-sm-4">Status:</dt>
-                                <dd class="col-sm-8" id="taskStatus"></dd>
-
-                                <dt class="col-sm-4">All day:</dt>
-                                <dd class="col-sm-8" id="taskAllDay"></dd>
-
-                                <dt class="col-sm-4" id="taskDueOnLabel">Due On:</dt>
-                                <dd class="col-sm-8" id="taskDueOn"></dd>
-
-                                <dt class="col-sm-4" id="taskDueByLabel">Due By:</dt>
-                                <dd class="col-sm-8" id="taskDueBy"></dd>
-
-                                <dt class="col-sm-4">Created:</dt>
-                                <dd class="col-sm-8" id="taskCreated"></dd>
-
-                                <dt class="col-sm-4" id="taskDoneOnLabel">Done On:</dt>
-                                <dd class="col-sm-8" id="taskDoneOn"></dd>
-                            </dl>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <button type="button" class="btn btn-primary" id="updateTaskBtn">OK</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
         this.modalElement = new bootstrap.Modal(document.getElementById(this.modalId));
         this.setupEventListeners();
     }
@@ -453,6 +396,27 @@ class TaskDetailsModal {
     setupEventListeners() {
         const modalElement = document.getElementById(this.modalId);
 
+        handleDueTypeChange(
+            document.getElementById('dueDateTypeEditSelect'),
+                'dateTimeEditOptions',
+                'timeEditOptions',
+                'taskEditDueDate',
+                'taskEditAllDayInput'
+        );
+
+        document.getElementById('taskEditAllDayInput').addEventListener('change', function() {
+            const timeOptions = document.getElementById('timeEditOptions');
+            if (this.checked) {
+                // hide the time input
+                timeOptions.classList.add('d-none');
+            } else {
+                // show the time input
+                timeOptions.classList.remove('d-none');
+                // default to 9 AM
+                document.getElementById('taskEditDueTime').value = '09:00';
+            }
+        });
+
         // Add an event listener for when the modal is fully hidden
         modalElement.addEventListener('hidden.bs.modal', () => {
             this.hide();
@@ -466,66 +430,126 @@ class TaskDetailsModal {
     }
 
     populateModalFields(task) {
-        document.getElementById('taskTitleInput').value = task.title;
+        document.getElementById('taskEditTitleInput').value = task.title;
         document.getElementById('taskList').textContent = task.list;
         document.getElementById('taskStatus').textContent = task.done ? 'Completed' : 'Pending';
         document.getElementById('taskCreated').textContent = formatDate(task.created);
 
-        const allDay = task.all_day;
-        document.getElementById('taskAllDay').textContent = allDay ? 'Yes' : 'No';
 
         // Conditionally populate and display the "Due On" and "Due By" fields
 
         const dueOn = task.due_on;
         const dueBy = task.due_by;
+        const allDay = task.all_day;
 
-        document.getElementById('taskDueOn').textContent = dueOn ? formatDateHuman(dueOn, allDay) : '';
-
-
-        document.getElementById('taskDueBy').textContent = dueBy ? formatDateHuman(dueBy, allDay) : '';
-
+        if (dueOn || dueBy) {
+            document.getElementById('dateTimeEditOptions').classList.remove('d-none');
+            // prefill the due type select
+            document.getElementById('dueDateTypeEditSelect').value = dueOn ? 'dueOn' : 'dueBy';
+            // prefill the date and time inputs
+            let dateObj = dueOn ? new Date(dueOn) : new Date(dueBy)
+            // Obtain the browser's locale
+            let browserLocale = navigator.language;
+            // Format date for the date input, using the browser's locale
+            let formattedDate = formatDateForm(dateObj.toISOString());
+            // Format time for the time input, using the browser's locale
+            let formattedTime = dateObj.toLocaleTimeString(browserLocale, {
+                hour12: false, // Prefer 24-hour clock if supported by the locale
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            document.getElementById('taskEditDueDate').value = formattedDate;
+            if (!allDay) {
+                // uncheck the checkbox
+                document.getElementById('taskEditAllDayInput').checked = false;
+                // prefill and show the time input
+                document.getElementById('timeEditOptions').classList.remove('d-none');
+                document.getElementById('taskEditDueTime').value = formattedTime;
+            } else {
+                document.getElementById('timeEditOptions').classList.add('d-none');
+                // check the checkbox
+                document.getElementById('taskEditAllDayInput').checked = true;
+            }
+        } else {
+            document.getElementById('dateTimeEditOptions').classList.add('d-none');
+        }
 
         // Conditionally populate and display the "Done On" field
         const doneOn = task.done_on;
 
         const isTaskDone = task.done === 'true';
         document.getElementById('taskDoneOn').textContent = isTaskDone ? formatDate(doneOn) : '';
+        document.getElementById('taskDoneOnLabel').style.display = isTaskDone ? 'block' : 'none';
+        document.getElementById('taskDoneOn').style.display = isTaskDone ? 'block' : 'none';
 
-
-        // Adjust visibility of date labels based on data
-        this.adjustDateVisibility(task);
     }
 
     async handleUpdateTask() {
-        const title = document.getElementById('taskTitleInput').value;
-        const task = this.currentTask;
-        task.title = title;
+        const titleInput = document.getElementById('taskEditTitleInput');
+        const dueDateTypeSelect = document.getElementById('dueDateTypeEditSelect');
+        const allDayCheckbox = document.getElementById('taskEditAllDayInput');
+        const dueDateInput = document.getElementById('taskEditDueDate');
+        const dueTimeInput = document.getElementById('taskEditDueTime');
+
+        const title = titleInput.value.trim();
+        const dueDateType = dueDateTypeSelect.value;
+        const isAllDay = allDayCheckbox.checked;
+        const dueDate = dueDateInput.value;
+        const dueTime = dueTimeInput.value;
+        // Format a date string in the format 'YYYY-MM-DDTHH:MM:SS'
+        const dueDateTime = isAllDay ? `${dueDate}` : `${dueDate}T${dueTime}`;
+
+        let requestPayload = {
+            title: title,
+        };
+
+        // Adjust payload based on the due date type selection
+        switch (dueDateType) {
+            case 'none':
+                // Ensure any due date info is removed from the payload
+                requestPayload.due_on = null;
+                requestPayload.due_by = null;
+                requestPayload.all_day = false;
+                requestPayload.due_type = 'none';
+                break;
+            case 'dueOn':
+                requestPayload.due_on = dueDateTime;
+                requestPayload.all_day = isAllDay;
+                requestPayload.due_type = 'on';
+                break;
+            case 'dueBy':
+                requestPayload.due_by = dueDateTime;
+                requestPayload.all_day = isAllDay;
+                requestPayload.due_type = 'by';
+                break;
+        }
 
         try {
-            await this.listManager.updateTask(task.id, task);
+            await this.listManager.updateTask(this.currentTask.id, requestPayload);
             this.hide();
-            this.onTaskUpdated(task.list); // Notify the parent UI manager of the change
+            this.onTaskUpdated(this.currentTask.list); // Notify the parent UI manager of the change
+            this.showAlertOutside('Task updated', 'success');
         } catch (error) {
             console.error('Error updating task:', error);
+            this.showAlert(`Failed to update the task: ${error.message}`);
         }
     }
 
-    adjustDateVisibility(task) {
-        document.getElementById('taskDueOn').style.display = task.due_on ? 'block' : 'none';
-        document.getElementById('taskDueOnLabel').style.display = task.due_on ? 'block' : 'none';
-        document.getElementById('taskDueBy').style.display = task.due_by ? 'block' : 'none';
-        document.getElementById('taskDueByLabel').style.display = task.due_by ? 'block' : 'none';
-        const isTaskDone = task.done === 'true';
-        document.getElementById('taskDoneOnLabel').style.display = isTaskDone ? 'block' : 'none';
-        document.getElementById('taskDoneOn').style.display = isTaskDone ? 'block' : 'none';
-    }
 
     show() {
+        document.getElementById('formErrorAlert2').classList.add('d-none');
         this.modalElement.show();
     }
 
     hide() {
         this.modalElement.hide();
+    }
+
+    showAlert(message, type) {
+        const alertBox = document.getElementById('formErrorAlert2');
+        alertBox.textContent = message;
+        alertBox.classList.remove('d-none'); // Show the alert box
+        alertBox.classList.add(`alert-${type}`); // Use the 'type' to add specific styling, e.g., 'alert-danger' for errors
     }
 }
 
@@ -541,4 +565,29 @@ function isOverdue(dueDate, currentDate, ignoreTime = false) {
         // Compare including the time
         return new Date(dueDate) < new Date(currentDate);
     }
+}
+
+function handleDueTypeChange(dueDateTypeSelect, dateTimeOptionsId, timeOptionsId, dueDateInputId, allDayCheckboxId) {
+    dueDateTypeSelect.addEventListener('change', function() {
+        const dateTimeOptions = document.getElementById(dateTimeOptionsId);
+        const timeOptions = document.getElementById(timeOptionsId);
+        const dueDateInput = document.getElementById(dueDateInputId);
+        const allDayCheckbox = document.getElementById(allDayCheckboxId);
+
+        if (this.value === 'none') {
+            dateTimeOptions.classList.add('d-none');
+        } else {
+            // Remove 'd-none' to show the options
+            dateTimeOptions.classList.remove('d-none');
+            // Check the 'All Day' checkbox by default
+            allDayCheckbox.checked = true;
+            dueDateInput.type = 'date'; // Default to date input
+            timeOptions.classList.add('d-none'); // Hide the time input by default
+
+            // Determine today's date
+            const today = new Date();
+            // Set the input value to today, adjusting format based on 'All Day'
+            dueDateInput.value = today.toISOString().split('T')[0];
+        }
+    });
 }

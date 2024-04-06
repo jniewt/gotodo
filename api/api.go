@@ -188,11 +188,17 @@ func (t *TaskChange) UnmarshalJSON(data []byte) error {
 		t.AllDay = allDay.(bool)
 	}
 
-	if dueTypRaw, ok := input["due_type"]; ok {
-		if t.getDueType() != dueTypRaw.(dueType) {
-			if err := t.overwriteDueFields(input); err != nil {
-				return err
-			}
+	// due_type must be set on all requests to change the due date
+	if _, ok := input["due_type"]; ok {
+		if err := t.overwriteDueFields(input); err != nil {
+			return err
+		}
+	} else {
+		// if due_type is not set, but due_on or due_by are, inform the user that due_type is required
+		_, okOn := input["due_on"]
+		_, okBy := input["due_by"]
+		if okOn || okBy {
+			return fmt.Errorf("due_type must be set to change the due date")
 		}
 	}
 
@@ -201,7 +207,18 @@ func (t *TaskChange) UnmarshalJSON(data []byte) error {
 
 func (t *TaskChange) overwriteDueFields(input map[string]interface{}) error {
 
-	dueTyp := input["due_type"].(dueType)
+	// gracefully handle bad input
+	var dueTyp dueType
+	v, ok := input["due_type"].(string)
+	if !ok {
+		return fmt.Errorf("missing due_type field")
+	}
+	switch v {
+	case "on", "by", "none":
+		dueTyp = dueType(v)
+	default:
+		return fmt.Errorf("invalid due_type")
+	}
 
 	format := "2006-01-02T15:04"
 	if t.AllDay {
@@ -235,7 +252,7 @@ func (t *TaskChange) overwriteDueFields(input map[string]interface{}) error {
 		t.DueBy = dueBy
 		t.DueOn = time.Time{}
 	default:
-		return fmt.Errorf("invalid due_type")
+		panic("invalid due_type")
 	}
 
 	return nil

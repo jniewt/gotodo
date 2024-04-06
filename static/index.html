@@ -55,10 +55,9 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
+                <!-- Error message section, initially hidden -->
+                <div class="alert alert-danger d-none" id="formErrorAlert"></div>
                 <form id="addItemForm">
-                    <!-- Error message section, initially hidden -->
-                    <div class="alert alert-danger d-none" id="formErrorAlert"></div>
-
                     <div class="mb-3">
                         <label for="taskListDropdown" class="form-label">List</label>
                         <select class="form-select" id="taskListDropdown" required>
@@ -102,6 +101,72 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary" id="saveTaskButton">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for editing task details -->
+<div class="modal fade" id="taskDetailsModal" tabindex="-1" aria-labelledby="taskDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="taskDetailsModalLabel">Task Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Error message section, initially hidden -->
+                <div class="alert alert-danger d-none" id="formErrorAlert2"></div>
+                <dl class="row">
+                    <form class="form-control">
+                        <div class="mb-3">
+                            <label for="taskEditTitleInput" class="form-label">Title</label>
+                            <input type="text" class="form-control" id="taskEditTitleInput" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="dueDateTypeEditSelect" class="form-label">Due Date</label>
+                            <select class="form-select" id="dueDateTypeEditSelect">
+                                <option value="none" selected>None</option>
+                                <option value="dueOn">Due On</option>
+                                <option value="dueBy">Due By</option>
+                            </select>
+                        </div>
+                        <div class="mb-3 d-none" id="dateTimeEditOptions">
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="taskEditAllDayInput" checked>
+                                <label class="form-check-label" for="taskEditAllDayInput">All Day</label>
+                            </div>
+                            <div class="row">
+                                <div class="col">
+                                    <label for="taskEditDueDate" class="form-label">Date</label>
+                                    <input type="date" class="form-control" id="taskEditDueDate">
+                                </div>
+                                <div class="col">
+                                    <div class="d-none" id="timeEditOptions">
+                                        <label for="taskEditDueTime" class="form-label">Time</label>
+                                        <input type="time" class="form-control" id="taskEditDueTime">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                    <dt class="col-sm-4">List:</dt>
+                    <dd class="col-sm-8" id="taskList"></dd>
+
+                    <dt class="col-sm-4">Status:</dt>
+                    <dd class="col-sm-8" id="taskStatus"></dd>
+
+                    <dt class="col-sm-4">Created:</dt>
+                    <dd class="col-sm-8" id="taskCreated"></dd>
+
+                    <dt class="col-sm-4" id="taskDoneOnLabel">Done On:</dt>
+                    <dd class="col-sm-8" id="taskDoneOn"></dd>
+                </dl>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="updateTaskBtn">OK</button>
             </div>
         </div>
     </div>

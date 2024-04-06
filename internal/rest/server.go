@@ -184,6 +184,7 @@ func (s *Server) handleTaskChange(w http.ResponseWriter, r *http.Request) {
 
 	if err = json.NewDecoder(r.Body).Decode(&change); err != nil {
 		s.httpError(w, http.StatusBadRequest, err)
+		return
 	}
 
 	// validate the input

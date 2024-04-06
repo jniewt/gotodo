@@ -4,6 +4,24 @@ export function formatDate(isoDate) {
     return date.toLocaleString();
 }
 
+// Takes an ISO date string and returns a date string in the format 'YYYY-MM-DD' that is expected by the date input element
+export function formatDateForm(isoDate) {
+    // Your original Date object
+    let dateObj = new Date(isoDate);
+
+// Get local date components
+    let year = dateObj.getFullYear();
+    let month = dateObj.getMonth() + 1; // getMonth() returns 0-11
+    let day = dateObj.getDate();
+
+// Ensure month and day are in two-digit format
+    month = month < 10 ? '0' + month : month;
+    day = day < 10 ? '0' + day : day;
+
+// Construct the formatted date string in 'YYYY-MM-DD' format
+    return `${year}-${month}-${day}`;
+}
+
 export function formatDateHuman(isoDate, ignoreTime = false) {
     if (!isoDate) return 'N/A'; // Handle null or undefined dates
 
