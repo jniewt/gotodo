@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -46,7 +47,13 @@ func main() {
 		repo = repository.NewRepository(store)
 		addTestData(repo)
 	} else {
-		store := storage.NewFile("~/.gotasks/db.yml")
+		// Get the home directory
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			// Handle error
+			panic(err)
+		}
+		store := storage.NewFile(filepath.Join(homeDir, ".gotasks/db.yml"))
 		repo = repository.NewRepository(store)
 	}
 
