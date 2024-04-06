@@ -2,13 +2,14 @@ package storage
 
 import (
 	"errors"
+	"fmt"
 	"os"
+	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 
 	"github.com/jniewt/gotodo/internal/core"
 	"github.com/jniewt/gotodo/internal/filter"
-	"path/filepath"
 )
 
 type File struct {
@@ -46,12 +47,7 @@ func (f *File) load() (*FileStore, error) {
 		return nil, err
 	}
 
-	var store FileStore
-	if err := yaml.Unmarshal(data, &store); err != nil {
-		return nil, err
-	}
-
-	return &store, nil
+	return unmarshalStore(data)
 }
 
 func (f *File) save(store *FileStore) error {
@@ -179,4 +175,113 @@ func (f *File) DeleteFiltered(name string) error {
 	}
 
 	return f.save(store)
+}
+
+// YAML can't handle the Node interface, so we need to unmarshal the store manually.
+func unmarshalStore(data []byte) (*FileStore, error) {
+
+	storeRaw := &yamlStore{}
+	if err := yaml.Unmarshal(data, storeRaw); err != nil {
+		return nil, err
+	}
+
+	store := yamlToStore(storeRaw)
+
+	return store, nil
+}
+
+type yamlStore struct {
+	Lists    []*core.List
+	Filtered []*filteredList
+}
+
+func yamlToStore(raw *yamlStore) *FileStore {
+	store := &FileStore{
+		Lists: raw.Lists,
+	}
+	for _, l := range raw.Filtered {
+		store.Filtered = append(store.Filtered, &filter.List{
+			Name:   l.Name,
+			Filter: l.Filter,
+		})
+	}
+	return store
+}
+
+type filteredList struct {
+	Name   string
+	Filter filter.Node
+}
+
+func (l *filteredList) UnmarshalYAML(node *yaml.Node) error {
+
+	type rawList struct {
+		Name   string
+		Filter map[string]interface{}
+	}
+
+	var r rawList
+	if err := node.Decode(&r); err != nil {
+		return err
+	}
+
+	l.Name = r.Name
+	if r.Filter != nil {
+		filt, err := unmarshalFilter(r.Filter)
+		if err != nil {
+			return err
+		}
+		l.Filter = filt
+	}
+
+	return nil
+}
+
+func unmarshalFilter(node map[string]interface{}) (filter.Node, error) {
+	_, ok := node["operator"]
+	if !ok {
+		// it's a leaf node
+		return unmarshalComparison(node)
+	}
+	return unmarshalLogical(node)
+}
+
+func unmarshalComparison(node map[string]interface{}) (filter.Node, error) {
+	field, ok := node["field"]
+	if !ok {
+		return nil, fmt.Errorf("missing field in comparison")
+	}
+	op, ok := node["op"]
+	if !ok {
+		return nil, fmt.Errorf("missing operator in comparison")
+	}
+	value, ok := node["value"]
+	if !ok {
+		return nil, fmt.Errorf("missing value in comparison")
+	}
+	compOp, err := filter.NewComparisonOperator(field.(string), op.(string), value.(string))
+	if err != nil {
+		return nil, err
+	}
+	return compOp, nil
+}
+
+func unmarshalLogical(node map[string]interface{}) (filter.Node, error) {
+	op := filter.LogicalOperator{}
+	switch node["operator"] {
+	case "AND":
+		op.Operator = filter.OpAnd
+	case "OR":
+		op.Operator = filter.OpOr
+	default:
+		return nil, fmt.Errorf("unknown logical operator: %s", node["operator"])
+	}
+	for _, child := range node["children"].([]interface{}) {
+		childNode, err := unmarshalFilter(child.(map[string]interface{}))
+		if err != nil {
+			return nil, err
+		}
+		op.Children = append(op.Children, childNode)
+	}
+	return &op, nil
 }
