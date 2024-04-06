@@ -100,7 +100,7 @@ func (r *Repository) DelList(name string) error {
 	if err != nil {
 		return fmt.Errorf("failed to update list cache: %w", err)
 	}
-	return ErrListNotFound
+	return nil
 }
 
 // AddFilteredList adds a new virtual list.

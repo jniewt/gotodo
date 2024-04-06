@@ -8,6 +8,7 @@ import (
 
 	"github.com/jniewt/gotodo/internal/core"
 	"github.com/jniewt/gotodo/internal/filter"
+	"path/filepath"
 )
 
 type File struct {
@@ -20,13 +21,19 @@ type FileStore struct {
 }
 
 func NewFile(path string) *File {
+	// Ensure the directory exists
+	dir := filepath.Dir(path)
+	if _, err := os.Stat(dir); errors.Is(err, os.ErrNotExist) {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			panic(err)
+		}
+	}
+
 	// Ensure the file exists
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		if errors.Is(err, os.ErrNotExist) {
-			// Create the file
-			if err := os.WriteFile(path, []byte{}, 0600); err != nil {
-				panic(err)
-			}
+	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+		// Create the file
+		if err := os.WriteFile(path, []byte{}, 0600); err != nil {
+			panic(err)
 		}
 	}
 
