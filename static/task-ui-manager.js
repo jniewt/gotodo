@@ -4,6 +4,8 @@ import {formatDate, formatDateHuman} from "./format-date.js";
 export class TaskUIManager {
     listManager;
     addTaskModal;
+    // TODO why does this have to be initialized here, and addTaskModal can be initialized in the constructor?
+    // otherwise the task title field is not getting populated
     taskDetailsModal = new TaskDetailsModal(this.listManager);
     dom;
     currentListName = '';
@@ -217,70 +219,12 @@ class AddTaskModal {
         this.onTaskAdded = onTaskAddedCallback;
         this.modalId = 'addTaskModal';
         this.showAlertOutside = showAlert;
-        this.initModal();
-    }
-
-    initModal() {
-        const modalHTML = `
-            <div class="modal fade" id="${this.modalId}" tabindex="-1">
-                <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="addItemModalLabel">Add New Task</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <form id="addItemForm"> 
-                                <!-- Error message section, initially hidden -->
-                                <div class="alert alert-danger d-none" id="formErrorAlert"></div>
-                                
-                                <div class="mb-3">
-                                    <label for="taskTitleInput" class="form-label">Title</label>
-                                    <input type="text" class="form-control" id="taskTitleInput" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="taskListDropdown" class="form-label">List</label>
-                                    <select class="form-select" id="taskListDropdown" required>
-                                        <!-- Options will be dynamically added here -->
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="dueDateTypeSelect" class="form-label">Due Date</label>
-                                    <select class="form-select" id="dueDateTypeSelect">
-                                        <option value="none" selected>None</option>
-                                        <option value="dueOn">Due On</option>
-                                        <option value="dueBy">Due By</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3 d-none" id="dateTimeOptions">
-                                    <div class="mb-3 form-check">
-                                        <input type="checkbox" class="form-check-input" id="taskAllDayInput" checked>
-                                        <label class="form-check-label" for="taskAllDayInput">All Day</label>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="taskDueDateTime" class="form-label">Date</label>
-                                        <input type="date" class="form-control" id="taskDueDateTime">
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <button type="button" class="btn btn-primary" id="saveTaskButton">OK</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-
         this.setupEventListeners();
     }
 
     setCurrentList(currentListName) {
         this.currentList = currentListName;
-        this.populateListDropdown(); // Ensure dropdown is updated with the current selection
+        this.populateListDropdown().then(r => {}); // Ensure dropdown is updated with the current selection
     }
 
     async populateListDropdown() {
@@ -294,9 +238,15 @@ class AddTaskModal {
     }
 
     setupEventListeners() {
+        const modalElement = document.getElementById(this.modalId);
+
+        // focus on the title input field when the modal is shown
+        modalElement.addEventListener('shown.bs.modal', () => {
+            document.getElementById('taskTitleInput').focus();
+        });
+
         const saveButton = document.getElementById('saveTaskButton');
         const dueDateTypeSelect = document.getElementById('dueDateTypeSelect');
-        const modalElement = document.getElementById(this.modalId);
 
         // Add an event listener for when the modal is fully hidden
         modalElement.addEventListener('hidden.bs.modal', () => {

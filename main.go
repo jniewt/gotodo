@@ -46,7 +46,7 @@ func main() {
 		repo = repository.NewRepository(store)
 		addTestData(repo)
 	} else {
-		store := storage.NewFile("tasks.yml")
+		store := storage.NewFile("~/.gotasks/db.yml")
 		repo = repository.NewRepository(store)
 	}
 
