@@ -255,6 +255,12 @@ class AddTaskModal {
 
         // Handle form submission
         saveButton.addEventListener('click', () => this.handleSubmit());
+        modalElement.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                saveButton.click();
+            }
+        })
 
         // Show date/time options based on due date type selection
         dueDateTypeSelect.addEventListener('change', function() {
