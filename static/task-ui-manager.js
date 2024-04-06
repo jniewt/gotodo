@@ -309,7 +309,7 @@ class AddTaskModal {
         const dueDate = dueDateInput.value;
         const dueTime = dueTimeInput.value;
         // format a date string in the format 'YYYY-MM-DDTHH:MM:SS'
-        const dueDateTime = isAllDay ? `${dueDate}T00:00:00` : `${dueDate}T${dueTime}`;
+        const dueDateTime = isAllDay ? `${dueDate}` : `${dueDate}T${dueTime}`;
 
         let requestPayload = {
             title: title,
