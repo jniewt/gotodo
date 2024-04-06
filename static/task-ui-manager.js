@@ -1,4 +1,4 @@
-import { sortByTitleThenDone, sortTasks } from './sort-tasks.js';
+import {sortByTitleThenDone, sortTasks} from './sort-tasks.js';
 import {formatDate, formatDateHuman} from "./format-date.js";
 
 export class TaskUIManager {
@@ -259,7 +259,8 @@ class AddTaskModal {
         // Show date/time options based on due date type selection
         dueDateTypeSelect.addEventListener('change', function() {
             const dateTimeOptions = document.getElementById('dateTimeOptions');
-            const dueDateTimeInput = document.getElementById('taskDueDateTime');
+            const timeOptions = document.getElementById('timeOptions');
+            const dueDateInput = document.getElementById('taskDueDate');
             const allDayCheckbox = document.getElementById('taskAllDayInput');
 
             if (this.value === 'none') {
@@ -269,42 +270,26 @@ class AddTaskModal {
                 dateTimeOptions.classList.remove('d-none');
                 // Check the 'All Day' checkbox by default
                 allDayCheckbox.checked = true;
-                dueDateTimeInput.type = 'date'; // Default to date input
+                dueDateInput.type = 'date'; // Default to date input
+                timeOptions.classList.add('d-none'); // Hide the time input by default
 
                 // Determine today's date
                 const today = new Date();
-                const todayFormattedDate = today.toISOString().split('T')[0];
-                const todayFormattedDateTime = todayFormattedDate + 'T' + today.toTimeString().split(' ')[0];
                 // Set the input value to today, adjusting format based on 'All Day'
-                dueDateTimeInput.value = allDayCheckbox.checked ? todayFormattedDate : todayFormattedDateTime;
-                // Since 'All Day' is checked by default, set type to 'date'
+                dueDateInput.value = today.toISOString().split('T')[0];
             }
         });
 
         document.getElementById('taskAllDayInput').addEventListener('change', function() {
-            const dueDateTimeInput = document.getElementById('taskDueDateTime');
+            const timeOptions = document.getElementById('timeOptions');
             if (this.checked) {
-                // Change the input type to 'date', removing the time part but keeping the date
-                const currentValue = dueDateTimeInput.value;
-                if (currentValue) {
-                    const datePart = currentValue.includes('T') ? currentValue.split('T')[0] : currentValue;
-                    dueDateTimeInput.type = 'date';
-                    dueDateTimeInput.value = datePart; // Keep the previously selected date
-                } else {
-                    // If there was no previous value, simply switch to date input
-                    dueDateTimeInput.type = 'date';
-                }
+                // hide the time input
+                timeOptions.classList.add('d-none');
             } else {
-                // When unchecking 'All Day', enable time selection without resetting the date
-                const currentValue = dueDateTimeInput.value;
-                dueDateTimeInput.type = 'datetime-local';
-                if (currentValue && !currentValue.includes('T')) {
-                    // If there's already a date but no time, append a default time part to it
-                    // This ensures the input value format matches 'datetime-local' requirements
-                    dueDateTimeInput.value = `${currentValue}T09:00`; // Default to 9 AM
-                }
-                // Note: If there was already a datetime value, changing the input type back to 'datetime-local'
-                // will naturally preserve it, so there's no need to explicitly set it again.
+                // show the time input
+                timeOptions.classList.remove('d-none');
+                // default to 9 AM
+                document.getElementById('taskDueTime').value = '09:00';
             }
         });
     }
@@ -322,13 +307,17 @@ class AddTaskModal {
         const listDropdown = document.getElementById('taskListDropdown');
         const dueDateTypeSelect = document.getElementById('dueDateTypeSelect');
         const allDayCheckbox = document.getElementById('taskAllDayInput');
-        const dueDateTimeInput = document.getElementById('taskDueDateTime');
+        const dueDateInput = document.getElementById('taskDueDate');
+        const dueTimeInput = document.getElementById('taskDueTime');
 
         const title = titleInput.value.trim();
         const listName = listDropdown.value;
         const dueDateType = dueDateTypeSelect.value;
         const isAllDay = allDayCheckbox.checked;
-        const dueDateTime = dueDateTimeInput.value;
+        const dueDate = dueDateInput.value;
+        const dueTime = dueTimeInput.value;
+        // format a date string in the format 'YYYY-MM-DDTHH:MM:SS'
+        const dueDateTime = isAllDay ? `${dueDate}T00:00:00` : `${dueDate}T${dueTime}`;
 
         let requestPayload = {
             title: title,
@@ -362,15 +351,15 @@ class AddTaskModal {
         document.getElementById('dueDateTypeSelect').value = 'none'; // Reset due date type
         document.getElementById('dateTimeOptions').classList.add('d-none');
         document.getElementById('taskAllDayInput').checked = true; // Reset 'All Day' checkbox
-        document.getElementById('taskDueDateTime').value = ''; // Reset due date/time input
-        document.getElementById('taskDueDateTime').type = 'date'; // Reset input type to 'date' (default
+        document.getElementById('taskDueDate').value = ''; // Reset due date/time input
+        document.getElementById('taskDueTime').value = ''; // Reset due date/time input
         form.classList.remove('was-validated'); // Remove validation class to reset the form state
 
         // Also hide the alert box
         const alertBox = document.getElementById('formErrorAlert');
         alertBox.classList.add('d-none');
         alertBox.textContent = ''; // Clear the error message
-        this.populateListDropdown(); // Ensure the dropdown is up-to-date
+        // this.populateListDropdown().then(r => {}); // Ensure the dropdown is up-to-date
         const modalElement = new bootstrap.Modal(document.getElementById(this.modalId));
         modalElement.show();
     }

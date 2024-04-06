@@ -82,9 +82,17 @@
                             <input type="checkbox" class="form-check-input" id="taskAllDayInput" checked>
                             <label class="form-check-label" for="taskAllDayInput">All Day</label>
                         </div>
-                        <div class="mb-3">
-                            <label for="taskDueDateTime" class="form-label">Date</label>
-                            <input type="date" class="form-control" id="taskDueDateTime">
+                        <div class="row">
+                            <div class="col">
+                                <label for="taskDueDate" class="form-label">Date</label>
+                                <input type="date" class="form-control" id="taskDueDate">
+                           </div>
+                            <div class="col">
+                                <div class="d-none" id="timeOptions">
+                                    <label for="taskDueTime" class="form-label">Time</label>
+                                    <input type="time" class="form-control" id="taskDueTime">
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </form>
