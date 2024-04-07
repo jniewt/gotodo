@@ -65,7 +65,8 @@ export class TaskUIManager {
     }
 
     createTaskElement(task) {
-        const itemEl = document.createElement('li');
+        const itemEl = document.createElement('a');
+        itemEl.href = '#';
         itemEl.className = 'list-group-item d-flex align-items-center';
 
         const checkbox = this.createCheckbox(task);
@@ -177,7 +178,7 @@ export class TaskUIManager {
     initContextMenu() {
         this.contextMenu = document.createElement('div');
         this.contextMenu.innerHTML = `<ul class="list-group">
-            <li class="list-group-item list-group-item-action" id="delete-task">Delete</li>
+            <a class="list-group-item list-group-item-action" id="delete-task" href="#">Delete</a>
         </ul>`;
         this.contextMenu.style.position = 'absolute';
         this.contextMenu.style.display = 'none';
