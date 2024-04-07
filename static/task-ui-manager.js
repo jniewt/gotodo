@@ -1,4 +1,4 @@
-import {sortByTitleThenDone, sortTasks} from './sort-tasks.js';
+import {sortByDone, sortByTitle, sortByDueOnDate, sortByDueByDate, sortTasks, sortByDueDate} from './sort-tasks.js';
 import {formatDate, formatDateForm, formatDateHuman} from "./format-date.js";
 
 export class TaskUIManager {
@@ -57,7 +57,7 @@ export class TaskUIManager {
     }
 
     displaySortedTasks(tasks) {
-        let sorted = sortTasks(tasks, sortByTitleThenDone);
+        let sorted = sortTasks(tasks, [sortByDone, sortByDueDate, sortByTitle]);
         const taskList = document.createElement('ul');
         taskList.className = 'list-group';
         sorted.forEach(task => taskList.appendChild(this.createTaskElement(task)));
@@ -247,7 +247,6 @@ class AddTaskModal {
         });
 
         const saveButton = document.getElementById('saveTaskButton');
-        const dueDateTypeSelect = document.getElementById('dueDateTypeSelect');
 
         // Add an event listener for when the modal is fully hidden
         modalElement.addEventListener('hidden.bs.modal', () => {
