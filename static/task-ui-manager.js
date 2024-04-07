@@ -1,4 +1,4 @@
-import {sortByDone, sortByTitle, sortByDueOnDate, sortByDueByDate, sortTasks, sortByDueDate} from './sort-tasks.js';
+import {sortByDone, sortByTitle, sortTasks, sortByDueDate} from './sort-tasks.js';
 import {formatDate, formatDateForm, formatDateHuman} from "./format-date.js";
 
 export class TaskUIManager {
@@ -8,7 +8,7 @@ export class TaskUIManager {
     // otherwise the task title field is not getting populated
     taskDetailsModal;
     dom;
-    currentListName = '';
+    currentList = null;
     showAlert;
     onTaskListChange;
 
@@ -30,10 +30,10 @@ export class TaskUIManager {
         this.initAddTaskButton();
     }
 
-    displayTasks(listName, tasks) {
-        this.currentListName = listName;
+    displayTasks(list, tasks) {
+        this.currentList = list;
         this.clearTasksDisplay();
-        this.setListNameHeader(listName);
+        this.setListNameHeader(list.name);
 
         if (!tasks || tasks.length === 0) {
             this.showNoTasksMessage();
@@ -155,7 +155,7 @@ export class TaskUIManager {
         this.updateTitleSpanAppearance(titleSpan, checkbox.checked);
         try {
             await this.listManager.updateTask(task.id, { done: checkbox.checked });
-            this.onTaskListChange(this.currentListName); // Notify the parent UI manager of the change
+            this.onTaskListChange(this.currentList.name); // Notify the parent UI manager of the change
         } catch (error) {
             console.error('Error updating task status:', error);
             // Error handling logic can be implemented here.
@@ -164,7 +164,7 @@ export class TaskUIManager {
 
     handleDeleteTask(taskId) {
         this.listManager.deleteTask(taskId).then(() => {
-            this.onTaskListChange(this.currentListName);
+            this.onTaskListChange(this.currentList.name);
             this.showAlert('Task deleted', 'success');
         }).catch(error => {
             // Log the error to the console and display an error message to the user
@@ -206,7 +206,7 @@ export class TaskUIManager {
         addTaskButton.setAttribute('data-bs-toggle', 'tooltip'); // Bootstrap tooltip
         addTaskButton.setAttribute('data-bs-placement', 'bottom'); // Tooltip position
         addTaskButton.addEventListener('click', () => {
-            this.addTaskModal.setCurrentList(this.currentListName); // Update current list before showing
+            this.addTaskModal.setCurrentList(this.currentList); // Update current list before showing
             this.addTaskModal.show();
         });
 
@@ -224,8 +224,8 @@ class AddTaskModal {
         this.setupEventListeners();
     }
 
-    setCurrentList(currentListName) {
-        this.currentList = currentListName;
+    setCurrentList(list) {
+        this.currentList = list;
         this.populateListDropdown().then(r => {}); // Ensure dropdown is updated with the current selection
     }
 

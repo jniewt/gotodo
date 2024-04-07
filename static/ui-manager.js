@@ -39,14 +39,16 @@ export class UIManager {
         let combinedLists = this.listManager.lists.map(listName => ({ name: listName, filtered: false }))
             .concat(this.listManager.filteredLists.map(listName => ({ name: listName, filtered: true })));
 
-        combinedLists.forEach(list => this.createListElement(list.name, list.filtered));
+        combinedLists.forEach(list => this.createListElement(list));
     }
 
     // Create a list element
-    createListElement(listName, isFiltered= false) {
+    createListElement(list) {
         const listElement = document.createElement('a');
         listElement.classList.add('list-group-item', 'list-group-item-action', 'd-flex', 'justify-content-between', 'align-items-center');
         listElement.href = '#';
+
+        let isFiltered = list.filtered || false;
 
         // Icon selection based on the list type
         const iconClass = isFiltered ? 'bi-filter' : 'bi-list-task';
@@ -57,19 +59,19 @@ export class UIManager {
 
         // Text content
         const text = document.createElement('span');
-        text.textContent = listName;
+        text.textContent = list.name;
         listElement.appendChild(text); // Append the text next to the icon
 
         listElement.onclick = () => {
-            this.listManager.getTasks(listName).then((tasks) => {
-                this.taskManager.displayTasks(listName, tasks);
+            this.listManager.getTasks(list.name).then((tasks) => {
+                this.taskManager.displayTasks(list, tasks);
             }).catch((error) => {
                 this.showAlert(`Failed to fetch tasks for list: ${error.message}`);
             });
             return false; // Prevent default anchor action
         };
 
-        const dropdown = this.createDropdown(listName);
+        const dropdown = this.createDropdown(list.name);
         listElement.appendChild(dropdown);
 
         // hide the dropdown for filtered lists for now, but so that the layout doesn't break
@@ -125,9 +127,9 @@ export class UIManager {
         });
     }
 
-    async refreshTasksDisplay(listName) {
-        const tasks = await this.listManager.getTasks(listName)
-        this.taskManager.displayTasks(listName, tasks);
+    async refreshTasksDisplay(list) {
+        const tasks = await this.listManager.getTasks(list.name)
+        this.taskManager.displayTasks(list, tasks);
     }
 
     showAlert(message, type = 'danger') {
