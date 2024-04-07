@@ -58,6 +58,14 @@ func Due(nodes ...Node) Node {
 	}
 }
 
+func Overdue() Node {
+	overdue, err := NewComparisonOperator("due_on", string(OpLt), "today")
+	if err != nil {
+		panic(err)
+	}
+	return overdue
+}
+
 // NoDueDate creates a filter that checks if a task has no due date.
 func NoDueDate() Node {
 	noDueBy, err := NewComparisonOperator("due_by", string(OpUnset), "")
@@ -88,11 +96,17 @@ func DueByInDays(n int) Node {
 
 // DueOnToday creates a filter that checks if a task is due today. Overdue tasks are included.
 func DueOnToday() Node {
-	compOp, err := NewComparisonOperator("due_on", string(OpOnDay), "0")
+	dueToday, err := NewComparisonOperator("due_on", string(OpOnDay), "today")
 	if err != nil {
 		panic(err)
 	}
-	return compOp
+	return &LogicalOperator{
+		Operator: OpOr,
+		Children: []Node{
+			Overdue(),
+			dueToday,
+		},
+	}
 }
 
 // Node is a node in a filter tree. It can be either a logical operator or a comparison operator. The root node is always
@@ -223,16 +237,6 @@ func parseDueBy(op, value string) (FieldComparisonFunc, error) {
 		}, nil
 	}
 
-	if op == string(OpOnDay) {
-		n, err := strconv.Atoi(value)
-		if err != nil {
-			return nil, fmt.Errorf("invalid value for due_by: %s", value)
-		}
-		return func(task core.Task) bool {
-			return isOnDay(task.DueBy, n, time.Now())
-		}, nil
-	}
-
 	if op == string(OpUnset) {
 		return func(task core.Task) bool {
 			return !task.HasDueBy()
@@ -245,6 +249,10 @@ func parseDueBy(op, value string) (FieldComparisonFunc, error) {
 	}
 
 	switch op {
+	case string(OpOnDay):
+		return func(task core.Task) bool {
+			return isOnDay(task.DueOn, 0, date)
+		}, nil
 	case string(OpEq):
 		return func(task core.Task) bool {
 			return task.HasDueBy() && task.DueBy.Equal(date)
@@ -286,16 +294,6 @@ func parseDueOn(op, value string) (FieldComparisonFunc, error) {
 		}, nil
 	}
 
-	if op == string(OpOnDay) {
-		n, err := strconv.Atoi(value)
-		if err != nil {
-			return nil, fmt.Errorf("invalid value for due_on: %s", value)
-		}
-		return func(task core.Task) bool {
-			return isOnDay(task.DueOn, n, time.Now())
-		}, nil
-	}
-
 	if op == string(OpUnset) {
 		return func(task core.Task) bool {
 			return !task.HasDueOn()
@@ -308,6 +306,10 @@ func parseDueOn(op, value string) (FieldComparisonFunc, error) {
 	}
 
 	switch op {
+	case string(OpOnDay):
+		return func(task core.Task) bool {
+			return isOnDay(task.DueOn, 0, date)
+		}, nil
 	case string(OpEq):
 		return func(task core.Task) bool {
 			return task.HasDueBy() && task.DueOn.Equal(date)
@@ -403,13 +405,19 @@ const (
 	OpGte      comparisonOp = ">="
 	OpLt       comparisonOp = "<"
 	OpLte      comparisonOp = "<="
-	OpNextDays comparisonOp = "next_days"
-	OpOnDay    comparisonOp = "on_day" // compares any date to a specific day relative to today, so value is number of days from now
+	OpNextDays comparisonOp = "next_days" // checks if the date is within n days from TODAY
+	OpOnDay    comparisonOp = "on_day"    // compares any date to a specific day
 	OpUnset    comparisonOp = "unset"
 )
 
-// ParseDate parses a date in the format "2006-01-02" or "2006-01-02T15:04" and returns a time.Time.
+// ParseDate parses a date in the format "2006-01-02" or "2006-01-02T15:04" and returns a time.Time. String "today" is
+// also accepted as a date.
 func ParseDate(date string) (time.Time, error) {
+	// if date is today return now at midnight
+	if date == "today" {
+		now := time.Now()
+		return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local), nil
+	}
 	// most specific format first
 	formats := []string{"2006-01-02T15:04", "2006-01-02"}
 	for _, format := range formats {
