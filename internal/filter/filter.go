@@ -328,7 +328,7 @@ func parseDueOn(op, value string) (FieldComparisonFunc, error) {
 		}, nil
 	case string(OpLt):
 		return func(task core.Task) bool {
-			return task.HasDueBy() && task.DueOn.Before(date)
+			return task.HasDueOn() && task.DueOn.Before(date)
 		}, nil
 	case string(OpLte):
 		return func(task core.Task) bool {
