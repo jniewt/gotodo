@@ -11,6 +11,7 @@ import (
 
 	"github.com/jniewt/gotodo/api"
 	"github.com/jniewt/gotodo/internal/core"
+	"github.com/jniewt/gotodo/internal/filter"
 	"github.com/jniewt/gotodo/internal/repository"
 )
 
@@ -67,12 +68,37 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleListGetAll(w http.ResponseWriter, _ *http.Request) {
 	lists, filtered := s.orga.Lists()
 
-	type response struct {
-		Lists         []string `json:"lists"`
-		FilteredLists []string `json:"filtered_lists"`
+	type filteredList struct {
+		api.ListResponse
+		Filtered bool `json:"filtered"`
 	}
 
-	s.jsonResponse(w, http.StatusOK, response{Lists: lists, FilteredLists: filtered})
+	type response struct {
+		Lists         []api.ListResponse `json:"lists"`
+		FilteredLists []filteredList     `json:"filtered_lists"`
+	}
+
+	listsAPI := make([]api.ListResponse, 0, len(lists))
+	for _, l := range lists {
+		listsAPI = append(listsAPI, api.FromList(*l))
+	}
+
+	filteredLists := make([]filteredList, 0, len(filtered))
+	for _, fl := range filtered {
+		tasks, err := s.orga.GetFilteredTasks(fl.Name)
+		if err != nil {
+			s.httpError(w, http.StatusBadRequest, err)
+			return
+		}
+
+		l := core.List{
+			Name:  fl.Name,
+			Items: tasks,
+		}
+		filteredLists = append(filteredLists, filteredList{api.FromList(l), true})
+	}
+
+	s.jsonResponse(w, http.StatusOK, response{Lists: listsAPI, FilteredLists: filteredLists})
 }
 
 func (s *Server) handleListGet(w http.ResponseWriter, r *http.Request) {
@@ -272,7 +298,7 @@ func (s *Server) handleTaskDel(w http.ResponseWriter, r *http.Request) {
 }
 
 type Organiser interface {
-	Lists() ([]string, []string)
+	Lists() ([]*core.List, []*filter.List)
 	GetList(name string) (core.List, error)
 	AddList(name string) (core.List, error)
 	DelList(name string) error

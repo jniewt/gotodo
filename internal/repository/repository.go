@@ -58,16 +58,8 @@ func (r *Repository) GetList(name string) (core.List, error) {
 }
 
 // Lists returns the names of all lists and filtered lists.
-func (r *Repository) Lists() ([]string, []string) {
-	lists := make([]string, 0, len(r.lists))
-	for _, list := range r.lists {
-		lists = append(lists, list.Name)
-	}
-	filtered := make([]string, 0, len(r.filtered))
-	for _, list := range r.filtered {
-		filtered = append(filtered, list.Name)
-	}
-	return lists, filtered
+func (r *Repository) Lists() ([]*core.List, []*filter.List) {
+	return r.lists, r.filtered
 }
 
 // AddList adds a new list.

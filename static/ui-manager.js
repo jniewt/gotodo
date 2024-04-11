@@ -36,8 +36,8 @@ export class UIManager {
     displayLists() {
         this.dom.listsDisplay.innerHTML = ''; // Clear current lists
 
-        let combinedLists = this.listManager.lists.map(listName => ({ name: listName, filtered: false }))
-            .concat(this.listManager.filteredLists.map(listName => ({ name: listName, filtered: true })));
+        let combinedLists = this.listManager.lists.map(l => ({ name: l.name, filtered: false }))
+            .concat(this.listManager.filteredLists.map(l => ({ name: l.name, filtered: true })));
 
         combinedLists.forEach(list => this.createListElement(list));
     }
@@ -128,8 +128,11 @@ export class UIManager {
     }
 
     async refreshTasksDisplay(list) {
-        const tasks = await this.listManager.getTasks(list.name)
-        this.taskManager.displayTasks(list, tasks);
+        this.listManager.getTasks(list.name).then((tasks) => {
+            this.taskManager.displayTasks(list, tasks);
+        }).catch((error) => {
+            this.showAlert(`Failed to fetch tasks for list: ${error.message}`);
+        });
     }
 
     showAlert(message, type = 'danger') {

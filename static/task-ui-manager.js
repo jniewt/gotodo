@@ -155,7 +155,7 @@ export class TaskUIManager {
         this.updateTitleSpanAppearance(titleSpan, checkbox.checked);
         try {
             await this.listManager.updateTask(task.id, { done: checkbox.checked });
-            this.onTaskListChange(this.currentList.name); // Notify the parent UI manager of the change
+            this.onTaskListChange(this.currentList); // Notify the parent UI manager of the change
         } catch (error) {
             console.error('Error updating task status:', error);
             // Error handling logic can be implemented here.
@@ -164,7 +164,7 @@ export class TaskUIManager {
 
     handleDeleteTask(taskId) {
         this.listManager.deleteTask(taskId).then(() => {
-            this.onTaskListChange(this.currentList.name);
+            this.onTaskListChange(this.currentList);
             this.showAlert('Task deleted', 'success');
         }).catch(error => {
             // Log the error to the console and display an error message to the user
@@ -217,7 +217,7 @@ export class TaskUIManager {
 class AddTaskModal {
     constructor(listManager, onTaskAddedCallback, showAlert) {
         this.listManager = listManager;
-        this.currentList = '';
+        this.currentList = null;
         this.onTaskAdded = onTaskAddedCallback;
         this.modalId = 'addTaskModal';
         this.showAlertOutside = showAlert;
@@ -234,7 +234,7 @@ class AddTaskModal {
         dropdown.innerHTML = ''; // Clear existing options
         const lists = this.listManager.lists;
         lists.forEach(list => {
-            const option = new Option(list, list, list === this.currentList, list === this.currentList);
+            const option = new Option(list.name, list.name, list.name === this.currentList.name, list.name === this.currentList.name);
             dropdown.add(option);
         });
     }
@@ -327,7 +327,7 @@ class AddTaskModal {
             console.log('Adding task to list:', listName, requestPayload)
             await this.listManager.createTask(listName, requestPayload);
             this.hide(); // Hide the modal
-            this.onTaskAdded(listName); // Trigger the callback on added task
+            this.onTaskAdded(this.listManager.listByName(listName)); // Trigger the callback on added task
             this.showAlertOutside('Task added', 'success');
         } catch (error) {
             // TODO doesn't make sense since the alert appears behind the modal, either close the modal or show the alert in the modal
@@ -527,7 +527,7 @@ class TaskDetailsModal {
         try {
             await this.listManager.updateTask(this.currentTask.id, requestPayload);
             this.hide();
-            this.onTaskUpdated(this.currentTask.list); // Notify the parent UI manager of the change
+            this.onTaskUpdated(this.listManager.listByName(this.currentTask.list)); // Notify the parent UI manager of the change
             this.showAlertOutside('Task updated', 'success');
         } catch (error) {
             console.error('Error updating task:', error);

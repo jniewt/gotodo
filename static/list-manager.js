@@ -91,4 +91,8 @@ export class ListManager {
             throw error;
         }
     }
+
+    listByName(name) {
+        return this.#lists.find(list => list.name === name);
+    }
 }
