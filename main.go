@@ -12,6 +12,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/jniewt/gotodo/api"
+	"github.com/jniewt/gotodo/internal/core"
 	"github.com/jniewt/gotodo/internal/filter"
 	"github.com/jniewt/gotodo/internal/repository"
 	"github.com/jniewt/gotodo/internal/rest"
@@ -78,7 +79,7 @@ func addTestData(repo *repository.Repository) {
 		{Title: "Something overdue", AllDay: true, DueBy: time.Now().Add(-24 * time.Hour)},
 	}
 
-	_, err := repo.AddList("Home")
+	_, err := repo.AddList("Home", core.RGB{R: 255, G: 165, B: 0})
 	if err != nil {
 		panic(err)
 	}
@@ -96,7 +97,7 @@ func addTestData(repo *repository.Repository) {
 		{Title: "Call client", DueOn: timeAtHourInDays(9, 3)},
 	}
 
-	_, err = repo.AddList("Work")
+	_, err = repo.AddList("Work", core.RGB{R: 0, G: 0, B: 255})
 	if err != nil {
 		panic(err)
 	}

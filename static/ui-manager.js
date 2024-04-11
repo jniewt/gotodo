@@ -1,4 +1,4 @@
-import { TaskUIManager } from './task-ui-manager.js';
+import {TaskUIManager} from './task-ui-manager.js';
 
 export class UIManager {
     constructor(listManager) {
@@ -36,8 +36,9 @@ export class UIManager {
     displayLists() {
         this.dom.listsDisplay.innerHTML = ''; // Clear current lists
 
-        let combinedLists = this.listManager.lists.map(l => ({ name: l.name, filtered: false }))
-            .concat(this.listManager.filteredLists.map(l => ({ name: l.name, filtered: true })));
+        let combinedLists = this.listManager.lists.map(l => ({ ...l, filtered: false }))
+            .concat(this.listManager.filteredLists.map(l => ({ ...l, filtered: true })));
+
 
         combinedLists.forEach(list => this.createListElement(list));
     }
@@ -54,6 +55,7 @@ export class UIManager {
         const iconClass = isFiltered ? 'bi-filter' : 'bi-list-task';
         const icon = document.createElement('i');
         icon.classList.add('bi', iconClass, 'me-2'); // 'me-2' for margin
+        icon.style.color = `rgb(${list.colour.r}, ${list.colour.g}, ${list.colour.b})`;
 
         listElement.appendChild(icon); // Append the icon to the list element
 

@@ -63,13 +63,13 @@ func (r *Repository) Lists() ([]*core.List, []*filter.List) {
 }
 
 // AddList adds a new list.
-func (r *Repository) AddList(name string) (core.List, error) {
+func (r *Repository) AddList(name string, colour core.RGB) (core.List, error) {
 	for _, list := range r.lists {
 		if list.Name == name {
 			return core.List{}, ErrListExists
 		}
 	}
-	l := core.List{Name: name}
+	l := core.List{Name: name, Colour: colour}
 	err := r.store.AddList(&l)
 	if err != nil {
 		return core.List{}, err

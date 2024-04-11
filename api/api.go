@@ -9,8 +9,9 @@ import (
 )
 
 type ListResponse struct {
-	Name  string          `json:"name"`
-	Items []*TaskResponse `json:"items"`
+	Name   string          `json:"name"`
+	Colour RGB             `json:"colour"`
+	Items  []*TaskResponse `json:"items"`
 }
 
 func FromList(l core.List) ListResponse {
@@ -20,7 +21,12 @@ func FromList(l core.List) ListResponse {
 		tasks[i] = &t
 	}
 	return ListResponse{
-		Name:  l.Name,
+		Name: l.Name,
+		Colour: RGB{
+			R: l.Colour.R,
+			G: l.Colour.G,
+			B: l.Colour.B,
+		},
 		Items: tasks,
 	}
 }
@@ -78,7 +84,14 @@ func (t TaskResponse) MarshalJSON() ([]byte, error) {
 }
 
 type ListAdd struct {
-	Name string `json:"name"`
+	Name   string `json:"name"`
+	Colour RGB    `json:"colour"`
+}
+
+type RGB struct {
+	R uint8 `json:"r"`
+	G uint8 `json:"g"`
+	B uint8 `json:"b"`
 }
 
 type TaskAdd struct {

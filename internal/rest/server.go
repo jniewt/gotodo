@@ -166,8 +166,8 @@ func (s *Server) handleListPost(w http.ResponseWriter, r *http.Request) {
 		s.httpError(w, http.StatusBadRequest, errors.New("missing list name"))
 		return
 	}
-
-	l, err := s.orga.AddList(req.Name)
+	col := core.RGB{R: req.Colour.R, G: req.Colour.G, B: req.Colour.B}
+	l, err := s.orga.AddList(req.Name, col)
 	if err != nil {
 		s.httpError(w, http.StatusBadRequest, err)
 		return
@@ -300,7 +300,7 @@ func (s *Server) handleTaskDel(w http.ResponseWriter, r *http.Request) {
 type Organiser interface {
 	Lists() ([]*core.List, []*filter.List)
 	GetList(name string) (core.List, error)
-	AddList(name string) (core.List, error)
+	AddList(name string, col core.RGB) (core.List, error)
 	DelList(name string) error
 	AddItem(list string, item api.TaskAdd) (core.Task, error)
 	DelItem(id int) error

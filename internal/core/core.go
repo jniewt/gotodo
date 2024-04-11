@@ -4,9 +4,16 @@ import (
 	"time"
 )
 
+type RGB struct {
+	R uint8
+	G uint8
+	B uint8
+}
+
 type List struct {
-	Name  string
-	Items []*Task
+	Name   string
+	Colour RGB
+	Items  []*Task
 }
 
 type Task struct {

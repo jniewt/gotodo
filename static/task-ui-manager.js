@@ -40,7 +40,9 @@ export class TaskUIManager {
             return;
         }
 
-        this.displaySortedTasks(tasks);
+        this.displaySortedTasks(tasks, list.filtered);
+
+        applyListColour(list, this.dom.tasksDisplay);
     }
 
     clearTasksDisplay() {
@@ -56,18 +58,23 @@ export class TaskUIManager {
         this.dom.tasksDisplay.innerHTML += '<p>No tasks in this list.</p>';
     }
 
-    displaySortedTasks(tasks) {
+    displaySortedTasks(tasks, filtered=false) {
         let sorted = sortTasks(tasks, [sortByDone, sortByDueDate, sortByTitle]);
         const taskList = document.createElement('ul');
         taskList.className = 'list-group';
-        sorted.forEach(task => taskList.appendChild(this.createTaskElement(task)));
+        sorted.forEach(task => taskList.appendChild(this.createTaskElement(task, filtered)));
         this.dom.tasksDisplay.appendChild(taskList);
     }
 
-    createTaskElement(task) {
+    createTaskElement(task, filtered=false) {
         const itemEl = document.createElement('a');
         itemEl.href = '#';
         itemEl.className = 'list-group-item d-flex align-items-center';
+
+        // if list is filtered, add a color to the task
+        if (filtered) {
+            itemEl.style.backgroundColor = (task.list === "Home") ? "rgba(255, 165, 0, 0.1)" : "rgba(0, 0, 255, 0.1)";
+        }
 
         const checkbox = this.createCheckbox(task);
         const titleSpan = this.createTitleSpan(task);
@@ -590,4 +597,20 @@ function handleDueTypeChange(dueDateTypeSelect, dateTimeOptionsId, timeOptionsId
             dueDateInput.value = today.toISOString().split('T')[0];
         }
     });
+}
+
+function applyListColour(list, element) {
+    let opacityStart = list.filtered ? 0 : 0.5;
+    let opacityEnd = 0;
+
+// Define your gradient transition points relative to the viewport height
+    let startVh = "0vh"; // Transition start point at 5% of the viewport height
+    let endVh = "10vh"; // Transition end point at 10% of the viewport height
+
+    element.style.backgroundImage = `linear-gradient(180deg, 
+  rgba(${list.colour.r}, ${list.colour.g}, ${list.colour.b}, ${opacityStart}) 0%, 
+  rgba(${list.colour.r}, ${list.colour.g}, ${list.colour.b}, ${opacityStart}) ${startVh}, 
+  rgba(${list.colour.r}, ${list.colour.g}, ${list.colour.b}, ${opacityEnd}) ${endVh}, 
+  rgba(${list.colour.r}, ${list.colour.g}, ${list.colour.b}, ${opacityEnd}) 100%)`;
+
 }
