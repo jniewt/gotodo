@@ -180,6 +180,43 @@ func (s *Server) handleListPost(w http.ResponseWriter, r *http.Request) {
 	s.jsonResponse(w, http.StatusCreated, response{List: api.FromList(l)})
 }
 
+func (s *Server) handleListEdit(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	if name == "" {
+		s.httpError(w, http.StatusBadRequest, errors.New("missing list name"))
+		return
+	}
+
+	var req api.ListAdd
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.httpError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if req.Name == "" {
+		s.httpError(w, http.StatusBadRequest, errors.New("missing list name"))
+		return
+	}
+
+	if req.Name != name {
+		s.httpError(w, http.StatusBadRequest, errors.New("renaming lists is not supported"))
+		return
+	}
+
+	col := core.RGB{R: req.Colour.R, G: req.Colour.G, B: req.Colour.B}
+	l, err := s.orga.EditList(req.Name, col)
+	if err != nil {
+		s.httpError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	type response struct {
+		List api.ListResponse `json:"list"`
+	}
+
+	s.jsonResponse(w, http.StatusCreated, response{List: api.FromList(l)})
+}
+
 func (s *Server) handleListDel(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	if name == "" {
@@ -301,6 +338,7 @@ type Organiser interface {
 	Lists() ([]*core.List, []*filter.List)
 	GetList(name string) (core.List, error)
 	AddList(name string, col core.RGB) (core.List, error)
+	EditList(name string, col core.RGB) (core.List, error) // renaming list is not supported
 	DelList(name string) error
 	AddItem(list string, item api.TaskAdd) (core.Task, error)
 	DelItem(id int) error

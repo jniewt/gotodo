@@ -51,6 +51,16 @@ export class ListManager {
         }
     }
 
+    async editList(listName, listColour) {
+        try {
+            await this.apiService.editList(listName, listColour);
+            await this.#fetchAllLists(); // Update internal state with new list
+        } catch (error) {
+            console.error('Failed to edit list:', error);
+            throw error; // Rethrow to handle in caller
+        }
+    }
+
     async deleteList(listName) {
         try {
             await this.apiService.deleteList(listName);

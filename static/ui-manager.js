@@ -4,6 +4,7 @@ export class UIManager {
     constructor(listManager) {
         this.listManager = listManager;
         this.addListModal = new AddListModal(this.listManager, this.onListCreateAttempt.bind(this));
+        this.editListModal = new EditListModal(this.listManager, this.onListEditAttempt.bind(this));
         this.taskManager = new TaskUIManager(this.listManager, {
             tasksDisplay: document.getElementById('tasksDisplay'),
             addTaskButtonContainer: document.getElementById('addTaskButtonContainer'),
@@ -12,7 +13,6 @@ export class UIManager {
         this.init();
     }
 
-    // Initialize the class
     init() {
         this.cacheDomElements();
         this.setupEventListeners();
@@ -89,16 +89,21 @@ export class UIManager {
         let dropdown = document.createElement('div');
         dropdown.classList.add('dropdown');
         dropdown.innerHTML = `
-      <a class="text-secondary" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-        <i class="bi bi-three-dots-vertical"></i>
-      </a>
-      <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-        <li><a class="dropdown-item" href="#">Delete</a></li>
-      </ul>
+        <a class="text-secondary" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-three-dots-vertical"></i>
+        </a>
+        <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+            <li><a class="dropdown-item" href="#" data-action="edit">Edit</a></li>
+            <li><a class="dropdown-item" href="#" data-action="delete">Delete</a></li>
+        </ul>
     `;
 
-        const deleteOption = dropdown.querySelector('.dropdown-item');
+        const editOption = dropdown.querySelector('[data-action="edit"]');
+        const deleteOption = dropdown.querySelector('[data-action="delete"]');
+
+        editOption.addEventListener('click', this.handleEditListClick.bind(this, listName));
         deleteOption.addEventListener('click', this.handleDeleteListClick.bind(this, listName));
+
 
         // Prevent list selection when interacting with the dropdown
         dropdown.addEventListener('click', (event) => event.stopPropagation());
@@ -117,16 +122,53 @@ export class UIManager {
         }
     }
 
+    onListEditAttempt(listName, error) {
+        if (error) {
+            // If there's an error, show an error alert
+            this.showAlert(`Failed to edit list: ${error.message}`, 'danger');
+        } else {
+            // On successful addition, update the display and show a success message
+            this.displayLists(this.listManager.lists);
+            // If the edited list is the one that is currently displayed, refresh the tasks display
+            if (this.taskManager.currentList !== null) {
+
+            }
+            if (this.taskManager.currentList.name === listName) {
+                let updatedList = this.listManager.listByName(listName);
+                this.taskManager.displayTasks(updatedList, updatedList.items);
+            } else if (this.taskManager.currentList.filtered) {
+                let filteredList = this.taskManager.currentList;
+                this.taskManager.displayTasks(filteredList, filteredList.items);
+            }
+            this.showAlert('List saved successfully!', 'success');
+        }
+    }
+
     // Handle the click event for deleting a list. event must be the last argument, as it's passed by the event listener,
     // which happens after the arguments from bind.
     handleDeleteListClick(listName, event) {
         event.stopPropagation(); // Prevent event bubbling
-        this.listManager.deleteList(listName).then(() => {
-            this.showAlert('List deleted successfully!', 'success');
-            this.displayLists(); // Refresh list display
-        }).catch((error) => {
-            this.showAlert(`Failed to delete list: ${error.message}`, 'danger');
-        });
+        const list = this.listManager.listByName(listName);
+        if (list.items.length > 0) {
+            if (!confirm(`The list "${listName}" has tasks. Do you still want to delete it?`)) {
+                return; // Exit if user cancels
+            }
+        }
+        try {
+            this.listManager.deleteList(listName).then(() => {
+                this.showAlert('List deleted successfully!', 'success');
+                this.displayLists(); // Refresh list display
+            }).catch((error) => {
+                this.showAlert(`Failed to delete list: ${error.message}`, 'danger');
+            });
+        } catch (error) {
+            this.showAlert(`Failed to retrieve list: ${error.message}`, 'danger');
+        }
+    }
+
+    handleEditListClick(listName, event) {
+        event.stopPropagation(); // Prevent event bubbling
+        this.editListModal.show(listName);
     }
 
     async refreshTasksDisplay(list) {
@@ -190,6 +232,7 @@ class AddListModal {
             } catch (error) {
                 console.error('Failed to create list:', error);
                 this.onListAdded(error); // Pass the error to the callback
+                // TODO Show an error message on the modal itself
             }
         }
     }
@@ -206,3 +249,64 @@ class AddListModal {
         }
     }
 }
+
+class EditListModal {
+    constructor(listManager, onListEditedCallback) {
+        this.listManager = listManager;
+        this.onListEdited = onListEditedCallback; // Callback when a list is edited
+        this.modalId = 'editListModal';
+        this.setupEventListeners();
+    }
+
+    setupEventListeners() {
+        const form = document.getElementById('editListForm');
+        form.addEventListener('submit', this.handleSubmit.bind(this));
+    }
+
+    async handleSubmit(event) {
+        event.preventDefault();
+        const listNameInput = document.getElementById('listNameEditInput');
+        const listName = listNameInput.value.trim();
+        const listColour = document.getElementById('listColourEditInput').value;
+
+
+            try {
+                await this.listManager.editList(listName, listColour);
+                this.hide();
+                this.onListEdited(listName, null); // Indicate success by passing null for the error
+            } catch (error) {
+                console.error('Failed to change list:', error);
+                this.onListEdited(listName, error); // Pass the error to the callback
+                // TODO Show an error message on the modal itself
+            }
+
+    }
+
+    show(listName) {
+        const modalElement = new bootstrap.Modal(document.getElementById(this.modalId));
+
+        let list = this.listManager.listByName(listName);
+        // prefill form fields
+        document.getElementById('listNameEditInput').value = list.name;
+        // list name can't be edited for now, disable
+        document.getElementById('listNameEditInput').disabled = true;
+
+        document.getElementById('listColourEditInput').value = `#${rgbToHex(list.colour.r, list.colour.g, list.colour.b)}`;
+
+        modalElement.show();
+    }
+
+    hide() {
+        const modalElement = bootstrap.Modal.getInstance(document.getElementById(this.modalId));
+        if (modalElement) {
+            modalElement.hide();
+        }
+    }
+}
+
+function rgbToHex(r, g, b) {
+    // Helper function to convert a single color component into a hexadecimal string
+    const toHex = c => c.toString(16).padStart(2, '0');
+    return toHex(r) + toHex(g) + toHex(b);
+}
+

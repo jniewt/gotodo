@@ -72,7 +72,8 @@ export class TaskUIManager {
 
         // if list is filtered, add a color to the task
         if (filtered) {
-            itemEl.style.backgroundColor = (task.list === "Home") ? "rgba(255, 165, 0, 0.1)" : "rgba(0, 0, 255, 0.1)";
+            let list = this.listManager.listByName(task.list);
+            itemEl.style.backgroundColor = `rgba(${list.colour.r}, ${list.colour.g}, ${list.colour.b}, 0.1)`;
         }
 
         const checkbox = this.createCheckbox(task);

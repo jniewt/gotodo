@@ -27,6 +27,10 @@ func (s *Server) routes() {
 	// accepts JSON: ListAdd, returns JSON: {list: List}
 	s.router.HandleFunc("POST /api/list", allowCors(s.handleListPost))
 
+	// update a list
+	// accepts JSON: ListAdd, returns JSON: {list: List}
+	s.router.HandleFunc("PATCH /api/list/{name}", allowCors(s.handleListEdit))
+
 	// delete a list
 	s.router.HandleFunc("DELETE /api/list/{name}", allowCors(s.handleListDel))
 

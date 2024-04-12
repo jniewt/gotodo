@@ -51,6 +51,14 @@ export class ApiService {
         });
     }
 
+    editList(listName, listColour) {
+        const rgbColour = hexToRGB(listColour);
+        return this.request(`/list/${encodeURIComponent(listName)}`, {
+            method: 'PATCH',
+            body: { name: listName, colour: rgbColour }
+        });
+    }
+
     deleteList(listName) {
         return this.request(`/list/${encodeURIComponent(listName)}`, {
             method: 'DELETE'

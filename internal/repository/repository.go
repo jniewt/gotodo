@@ -82,6 +82,26 @@ func (r *Repository) AddList(name string, colour core.RGB) (core.List, error) {
 	return l, nil
 }
 
+// EditList updates a list.
+func (r *Repository) EditList(name string, colour core.RGB) (core.List, error) {
+	l, err := r.getList(name)
+	if err != nil {
+		return core.List{}, err
+	}
+	l.Colour = colour
+	err = r.store.UpdateList(name, l)
+	if err != nil {
+		return core.List{}, err
+	}
+
+	err = r.updateListCache()
+	if err != nil {
+		return core.List{}, fmt.Errorf("failed to update list cache: %w", err)
+	}
+	return *l, nil
+
+}
+
 // DelList deletes a list.
 func (r *Repository) DelList(name string) error {
 	err := r.store.DeleteList(name)
