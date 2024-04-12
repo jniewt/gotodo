@@ -41,9 +41,9 @@ export class ListManager {
         return data.list.items
     }
 
-    async createList(listName) {
+    async createList(listName, listColour) {
         try {
-            await this.apiService.createList(listName);
+            await this.apiService.createList(listName, listColour);
             await this.#fetchAllLists(); // Update internal state with new list
         } catch (error) {
             console.error('Failed to create list:', error);

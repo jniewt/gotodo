@@ -166,33 +166,6 @@ class AddListModal {
         this.listManager = listManager;
         this.onListAdded = onListAddedCallback; // Callback when a list is added
         this.modalId = 'addListModal';
-        this.initModal();
-    }
-
-    initModal() {
-        const modalHTML = `
-      <div class="modal fade" id="${this.modalId}" tabindex="-1" aria-labelledby="${this.modalId}Label" aria-hidden="true">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title" id="${this.modalId}Label">New List</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-              <form id="addListForm">
-                <div class="mb-3">
-                  <label for="listNameInput" class="form-label">List Name</label>
-                  <input type="text" class="form-control" id="listNameInput" required>
-                </div>
-                <button type="submit" class="btn btn-primary">Create List</button>
-              </form>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
         this.setupEventListeners();
     }
 
@@ -205,10 +178,11 @@ class AddListModal {
         event.preventDefault();
         const listNameInput = document.getElementById('listNameInput');
         const listName = listNameInput.value.trim();
+        const listColour = document.getElementById('listColourInput').value;
 
         if (listName) {
             try {
-                await this.listManager.createList(listName);
+                await this.listManager.createList(listName, listColour);
 
                 this.hide();
                 listNameInput.value = ''; // Reset input after successful creation

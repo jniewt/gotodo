@@ -34,6 +34,7 @@ export class TaskUIManager {
         this.currentList = list;
         this.clearTasksDisplay();
         this.setListNameHeader(list.name);
+        applyListColour(list, this.dom.tasksDisplay);
 
         if (!tasks || tasks.length === 0) {
             this.showNoTasksMessage();
@@ -41,8 +42,6 @@ export class TaskUIManager {
         }
 
         this.displaySortedTasks(tasks, list.filtered);
-
-        applyListColour(list, this.dom.tasksDisplay);
     }
 
     clearTasksDisplay() {
