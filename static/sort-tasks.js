@@ -13,8 +13,8 @@ export function sortByDone(a, b) {
 }
 
 export function sortByDueDate(a, b) {
-    let a_due = a.due_on || a.due_by;
-    let b_due = b.due_on || b.due_by;
+    let a_due = a.due;
+    let b_due = b.due;
     if (a_due === b_due) return 0; // Handles equal due dates, including no due date
     if (!a_due) return 1; // No due date goes to the bottom
     if (!b_due) return -1; // No due date goes to the bottom
@@ -37,20 +37,6 @@ export function sortByDueDate(a, b) {
 
     // compare times
     return new Date(a_due) - new Date(b_due); // Earlier due dates come first
-}
-
-export function sortByDueOnDate(a, b) {
-    if (!a.due_on) return 1; // No due date goes to the bottom
-    if (!b.due_on) return -1; // No due date goes to the bottom
-    if (a.due_on === b.due_on) return 0; // Handles equal due dates, including no due date
-    return new Date(a.due_on) - new Date(b.due_on); // Earlier due dates come first
-}
-
-export function sortByDueByDate(a, b) {
-    if (!a.due_by) return 1; // No due date goes to the bottom
-    if (!b.due_by) return -1; // No due date goes to the bottom
-    if (a.due_by === b.due_by) return 0; // Handles equal due dates, including no due date
-    return new Date(a.due_by) - new Date(b.due_by); // Earlier due dates come first
 }
 
 export function sortByTitle(a, b) {

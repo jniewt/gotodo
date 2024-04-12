@@ -104,7 +104,7 @@ export class TaskUIManager {
         itemEl.append(contentContainer);
 
         // check if the task has a due date and add the due date icon and text
-        if (task.due_on || task.due_by || task.done) {
+        if (task.due_type !== "" || task.done) {
             const dueDateInfo = document.createElement('span');
             let dateText, iconClass, textStyle;
 
@@ -115,10 +115,10 @@ export class TaskUIManager {
                 textStyle = 'color: grey; text-decoration: line-through;';
             } else {
                 // Handle due and overdue tasks
-                const dueDate = task.due_on || task.due_by;
+                const dueDate = task.due;
                 const overdue = isOverdue(new Date(dueDate), new Date(), task.all_day);
                 dateText = formatDateHuman(dueDate, task.all_day);
-                iconClass = task.due_by ? 'bi-calendar-range' : 'bi-calendar';
+                iconClass = task.due_type === "due_by" ? 'bi-calendar-range' : 'bi-calendar';
                 textStyle = overdue ? 'color: red;' : 'color: inherit;';
             }
 
@@ -322,13 +322,11 @@ class AddTaskModal {
 
         let requestPayload = {
             title: title,
+            due_type: dueDateType,
         };
 
-        if (dueDateType === 'dueOn') {
-            requestPayload.due_on = dueDateTime;
-            requestPayload.all_day = isAllDay;
-        } else if (dueDateType === 'dueBy') {
-            requestPayload.due_by = dueDateTime;
+        if (dueDateType !== 'none') {
+            requestPayload.due = dueDateTime;
             requestPayload.all_day = isAllDay;
         }
 
@@ -447,16 +445,16 @@ class TaskDetailsModal {
 
         // Conditionally populate and display the "Due On" and "Due By" fields
 
-        const dueOn = task.due_on;
-        const dueBy = task.due_by;
+        const due = task.due;
+        const dueType = task.due_type;
         const allDay = task.all_day;
 
-        if (dueOn || dueBy) {
+        if (dueType !== "") {
             document.getElementById('dateTimeEditOptions').classList.remove('d-none');
             // prefill the due type select
-            document.getElementById('dueDateTypeEditSelect').value = dueOn ? 'dueOn' : 'dueBy';
+            document.getElementById('dueDateTypeEditSelect').value = dueType;
             // prefill the date and time inputs
-            let dateObj = dueOn ? new Date(dueOn) : new Date(dueBy)
+            let dateObj = new Date(due)
             // Obtain the browser's locale
             let browserLocale = navigator.language;
             // Format date for the date input, using the browser's locale
@@ -513,24 +511,13 @@ class TaskDetailsModal {
         };
 
         // Adjust payload based on the due date type selection
-        switch (dueDateType) {
-            case 'none':
-                // Ensure any due date info is removed from the payload
-                requestPayload.due_on = null;
-                requestPayload.due_by = null;
-                requestPayload.all_day = false;
-                requestPayload.due_type = 'none';
-                break;
-            case 'dueOn':
-                requestPayload.due_on = dueDateTime;
-                requestPayload.all_day = isAllDay;
-                requestPayload.due_type = 'on';
-                break;
-            case 'dueBy':
-                requestPayload.due_by = dueDateTime;
-                requestPayload.all_day = isAllDay;
-                requestPayload.due_type = 'by';
-                break;
+        requestPayload.due_type = dueDateType;
+        if (dueDateType !== 'none') {
+            requestPayload.due = dueDateTime;
+            requestPayload.all_day = isAllDay;
+        } else {
+            requestPayload.due = null;
+            requestPayload.all_day = false;
         }
 
         try {

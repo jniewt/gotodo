@@ -37,8 +37,8 @@ type TaskResponse struct {
 	List    string    `json:"list"`
 	Done    bool      `json:"done"`
 	AllDay  bool      `json:"all_day"`
-	DueBy   time.Time `json:"due_by,omitempty"`
-	DueOn   time.Time `json:"due_on,omitempty"`
+	DueType string    `json:"due_type"`
+	Due     time.Time `json:"due,omitempty"`
 	Created time.Time `json:"created"`
 	DoneOn  time.Time `json:"done_on,omitempty"`
 }
@@ -49,40 +49,34 @@ func FromTask(t core.Task) TaskResponse {
 		Title:   t.Title,
 		List:    t.List,
 		Done:    t.Done,
+		DueType: string(t.DueType),
+		Due:     t.Due,
 		AllDay:  t.AllDay,
 		Created: t.Created,
 		DoneOn:  t.DoneOn,
-	}
-	if t.DueType == core.DueBy {
-		resp.DueBy = t.Due
-	} else if t.DueType == core.DueOn {
-		resp.DueOn = t.Due
 	}
 	return resp
 }
 
 // MarshalJSON overwrites JSON marshalling to not send zero-value time fields
 func (t TaskResponse) MarshalJSON() ([]byte, error) {
-	var dueBy, dueOn, doneOn string
-	if !t.DueBy.IsZero() {
-		dueBy = t.DueBy.Format(time.RFC3339)
+	var due, doneOn string
+
+	if !t.Due.IsZero() {
+		due = t.Due.Format(time.RFC3339)
 	}
-	if !t.DueOn.IsZero() {
-		dueOn = t.DueOn.Format(time.RFC3339)
-	}
+
 	if !t.DoneOn.IsZero() {
 		doneOn = t.DoneOn.Format(time.RFC3339)
 	}
 	type Alias TaskResponse
 	return json.Marshal(&struct {
 		Alias
-		DueBy  string `json:"due_by,omitempty"`
-		DueOn  string `json:"due_on,omitempty"`
+		Due    string `json:"due,omitempty"`
 		DoneOn string `json:"done_on,omitempty"`
 	}{
 		Alias:  Alias(t),
-		DueBy:  dueBy,
-		DueOn:  dueOn,
+		Due:    due,
 		DoneOn: doneOn,
 	})
 }
@@ -99,10 +93,10 @@ type RGB struct {
 }
 
 type TaskAdd struct {
-	Title  string    `json:"title"`
-	AllDay bool      `json:"all_day"`
-	DueBy  time.Time `json:"due_by"`
-	DueOn  time.Time `json:"due_on"`
+	Title   string       `json:"title"`
+	AllDay  bool         `json:"all_day"`
+	DueType core.DueType `json:"due_type"`
+	Due     time.Time    `json:"due"`
 }
 
 // UnmarshalJSON overwrites JSON unmarshalling to parse time fields properly
@@ -110,8 +104,7 @@ type TaskAdd struct {
 func (t *TaskAdd) UnmarshalJSON(data []byte) error {
 	type Alias TaskAdd
 	aux := struct {
-		DueBy string `json:"due_by"`
-		DueOn string `json:"due_on"`
+		Due string `json:"due"`
 		*Alias
 	}{
 		Alias: (*Alias)(t),
@@ -123,19 +116,12 @@ func (t *TaskAdd) UnmarshalJSON(data []byte) error {
 	if aux.AllDay {
 		format = "2006-01-02"
 	}
-	if aux.DueBy != "" {
-		dueBy, err := time.ParseInLocation(format, aux.DueBy, time.Local)
+	if string(aux.DueType) != "none" || aux.DueType != core.DueNone {
+		due, err := time.ParseInLocation(format, aux.Due, time.Local)
 		if err != nil {
 			return err
 		}
-		t.DueBy = dueBy
-	}
-	if aux.DueOn != "" {
-		dueOn, err := time.ParseInLocation(format, aux.DueOn, time.Local)
-		if err != nil {
-			return err
-		}
-		t.DueOn = dueOn
+		t.Due = due
 	}
 	return nil
 }
@@ -150,19 +136,8 @@ type TaskChange struct {
 	AllDay bool   `json:"all_day"`
 
 	// DueType must be set to one of TypeDueOn, TypeDueBy or TypeDueNone in requests to change the due date.
-	DueType dueType   `json:"due_type"`
-	DueBy   time.Time `json:"due_by,omitempty"`
-	DueOn   time.Time `json:"due_on,omitempty"`
-}
-
-func (t *TaskChange) getDueType() dueType {
-	if !t.DueBy.IsZero() {
-		return TypeDueBy
-	}
-	if !t.DueOn.IsZero() {
-		return TypeDueOn
-	}
-	return TypeDueNone
+	DueType core.DueType `json:"due_type"`
+	Due     time.Time    `json:"due,omitempty"`
 }
 
 func (t *TaskChange) Validate() error {
@@ -171,10 +146,6 @@ func (t *TaskChange) Validate() error {
 	}
 	if t.List == "" {
 		return fmt.Errorf("missing list name")
-	}
-
-	if !t.DueBy.IsZero() && !t.DueOn.IsZero() {
-		return fmt.Errorf("only one of dueOn or dueBy can be set")
 	}
 
 	return nil
@@ -211,11 +182,9 @@ func (t *TaskChange) UnmarshalJSON(data []byte) error {
 			return err
 		}
 	} else {
-		// if due_type is not set, but due_on or due_by are, inform the user that due_type is required
-		_, okOn := input["due_on"]
-		_, okBy := input["due_by"]
-		if okOn || okBy {
-			return fmt.Errorf("due_type must be set to change the due date")
+		// if due_type is not set, but due is, inform the user that due_type is required
+		if _, ok = input["due"]; ok {
+			return fmt.Errorf("due_type must be set (to due_on, due_by or none) when changing the due date")
 		}
 	}
 
@@ -225,14 +194,16 @@ func (t *TaskChange) UnmarshalJSON(data []byte) error {
 func (t *TaskChange) overwriteDueFields(input map[string]interface{}) error {
 
 	// gracefully handle bad input
-	var dueTyp dueType
+	var dueTyp core.DueType
 	v, ok := input["due_type"].(string)
 	if !ok {
 		return fmt.Errorf("missing due_type field")
 	}
 	switch v {
-	case "on", "by", "none":
-		dueTyp = dueType(v)
+	case string(core.DueBy), string(core.DueOn), string(core.DueNone):
+		dueTyp = core.DueType(v)
+	case "none":
+		dueTyp = core.DueNone
 	default:
 		return fmt.Errorf("invalid due_type")
 	}
@@ -243,42 +214,23 @@ func (t *TaskChange) overwriteDueFields(input map[string]interface{}) error {
 	}
 
 	switch dueTyp {
-	case TypeDueNone:
-		t.DueBy = time.Time{}
-		t.DueOn = time.Time{}
-	case TypeDueOn:
-		dueOnRaw, ok := input["due_on"]
+	case core.DueNone:
+		t.Due = time.Time{}
+		t.DueType = core.DueNone
+	case core.DueOn, core.DueBy:
+		dueRaw, ok := input["due"]
 		if !ok {
-			return fmt.Errorf("missing due_on field")
+			return fmt.Errorf("missing due field")
 		}
-		dueOn, err := time.ParseInLocation(format, dueOnRaw.(string), time.Local)
+		due, err := time.ParseInLocation(format, dueRaw.(string), time.Local)
 		if err != nil {
 			return err
 		}
-		t.DueOn = dueOn
-		t.DueBy = time.Time{}
-	case TypeDueBy:
-		dueByRaw, ok := input["due_by"]
-		if !ok {
-			return fmt.Errorf("missing due_by field")
-		}
-		dueBy, err := time.ParseInLocation(format, dueByRaw.(string), time.Local)
-		if err != nil {
-			return err
-		}
-		t.DueBy = dueBy
-		t.DueOn = time.Time{}
+		t.Due = due
+		t.DueType = dueTyp
 	default:
-		panic("invalid due_type")
+		panic(fmt.Sprintf("invalid due type %v", dueTyp))
 	}
 
 	return nil
 }
-
-type dueType string
-
-const (
-	TypeDueOn   dueType = "on"
-	TypeDueBy   dueType = "by"
-	TypeDueNone dueType = "none"
-)

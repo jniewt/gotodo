@@ -284,22 +284,18 @@ func (s *Server) initTaskChange(id int) (api.TaskChange, error) {
 	}
 
 	change := api.TaskChange{
-		Title:  t.Title,
-		Done:   t.Done,
-		List:   t.List,
-		AllDay: t.AllDay,
-	}
-
-	if t.DueType == core.DueBy {
-		change.DueBy = t.Due
-	} else if t.DueType == core.DueOn {
-		change.DueOn = t.Due
+		Title:   t.Title,
+		Done:    t.Done,
+		List:    t.List,
+		AllDay:  t.AllDay,
+		Due:     t.Due,
+		DueType: t.DueType,
 	}
 
 	return change, nil
 }
 
-func (s *Server) handleTaskPost(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleTaskAdd(w http.ResponseWriter, r *http.Request) {
 	list := r.PathValue("name")
 	if list == "" {
 		s.httpError(w, http.StatusBadRequest, errors.New("missing list name"))

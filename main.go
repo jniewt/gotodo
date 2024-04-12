@@ -70,13 +70,13 @@ func main() {
 
 func addTestData(repo *repository.Repository) {
 	tasks := []api.TaskAdd{
-		{Title: "Buy avocados", AllDay: true, DueBy: timeAtHourInDays(0, 2)},
-		{Title: "Walk the cat", DueOn: time.Now().Add(2 * time.Hour)},
-		{Title: "Write task app", DueBy: time.Now().Add(24 * time.Hour)},
+		{Title: "Buy avocados", AllDay: true, DueType: core.DueBy, Due: timeAtHourInDays(0, 2)},
+		{Title: "Walk the cat", DueType: core.DueOn, Due: time.Now().Add(2 * time.Hour)},
+		{Title: "Write task app", DueType: core.DueBy, Due: time.Now().Add(24 * time.Hour)},
 		{Title: "Learn JS"},
-		{Title: "Cook dinner", DueOn: todayAtHour(18)},
-		{Title: "Wash the dishes", AllDay: true, DueBy: today()},
-		{Title: "Something overdue", AllDay: true, DueBy: time.Now().Add(-24 * time.Hour)},
+		{Title: "Cook dinner", DueType: core.DueOn, Due: todayAtHour(18)},
+		{Title: "Wash the dishes", AllDay: true, DueType: core.DueBy, Due: today()},
+		{Title: "Something overdue", AllDay: true, DueType: core.DueBy, Due: time.Now().Add(-24 * time.Hour)},
 	}
 
 	_, err := repo.AddList("Home", core.RGB{R: 255, G: 165, B: 0})
@@ -93,8 +93,8 @@ func addTestData(repo *repository.Repository) {
 
 	tasks = []api.TaskAdd{
 		{Title: "Write report"},
-		{Title: "Prepare presentation", AllDay: true, DueBy: timeAtHourInDays(0, 5)},
-		{Title: "Call client", DueOn: timeAtHourInDays(9, 3)},
+		{Title: "Prepare presentation", AllDay: true, DueType: core.DueBy, Due: timeAtHourInDays(0, 5)},
+		{Title: "Call client", DueType: core.DueBy, Due: timeAtHourInDays(9, 3)},
 	}
 
 	_, err = repo.AddList("Work", core.RGB{R: 0, G: 0, B: 255})

@@ -36,7 +36,7 @@ func (s *Server) routes() {
 
 	// add a task
 	// accepts JSON: TaskAdd, returns JSON: {task: Task}
-	s.router.HandleFunc("POST /api/list/{name}", allowCors(s.handleTaskPost))
+	s.router.HandleFunc("POST /api/list/{name}", allowCors(s.handleTaskAdd))
 
 	// delete a task
 	s.router.HandleFunc("DELETE /api/items/{id}", allowCors(s.handleTaskDel))
