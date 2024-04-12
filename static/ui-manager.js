@@ -64,9 +64,14 @@ export class UIManager {
         text.textContent = list.name;
         listElement.appendChild(text); // Append the text next to the icon
 
+        var sidebarOffcanvas = document.getElementById('sidebar');
         listElement.onclick = () => {
             this.listManager.getTasks(list.name).then((tasks) => {
                 this.taskManager.displayTasks(list, tasks);
+                const sidebar = bootstrap.Offcanvas.getInstance(sidebarOffcanvas);
+                if (sidebar !== null) {
+                    sidebar.hide();
+                }
             }).catch((error) => {
                 this.showAlert(`Failed to fetch tasks for list: ${error.message}`);
             });
