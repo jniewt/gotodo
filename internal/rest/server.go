@@ -283,14 +283,20 @@ func (s *Server) initTaskChange(id int) (api.TaskChange, error) {
 		return api.TaskChange{}, err
 	}
 
-	return api.TaskChange{
+	change := api.TaskChange{
 		Title:  t.Title,
 		Done:   t.Done,
 		List:   t.List,
 		AllDay: t.AllDay,
-		DueOn:  t.DueOn,
-		DueBy:  t.DueBy,
-	}, nil
+	}
+
+	if t.DueType == core.DueBy {
+		change.DueBy = t.Due
+	} else if t.DueType == core.DueOn {
+		change.DueOn = t.Due
+	}
+
+	return change, nil
 }
 
 func (s *Server) handleTaskPost(w http.ResponseWriter, r *http.Request) {

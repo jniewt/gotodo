@@ -50,12 +50,12 @@ func TestNoDueDate(t *testing.T) {
 		},
 		{
 			name: "due by",
-			task: core.Task{DueBy: time.Now()},
+			task: core.Task{DueType: core.DueBy, Due: time.Now()},
 			want: false,
 		},
 		{
 			name: "due on",
-			task: core.Task{DueOn: time.Now()},
+			task: core.Task{DueType: core.DueOn, Due: time.Now()},
 			want: false,
 		},
 	}
@@ -81,31 +81,31 @@ func TestDueByInDays(t *testing.T) {
 	}{
 		{
 			name: "due today",
-			task: core.Task{DueBy: time.Now()},
+			task: core.Task{DueType: core.DueBy, Due: time.Now()},
 			days: 0,
 			want: true,
 		},
 		{
 			name: "due tomorrow",
-			task: core.Task{DueBy: time.Now().Add(24 * time.Hour)},
+			task: core.Task{DueType: core.DueBy, Due: time.Now().Add(24 * time.Hour)},
 			days: 1,
 			want: true,
 		},
 		{
 			name: "due tomorrow want today",
-			task: core.Task{DueBy: time.Now().Add(24 * time.Hour)},
+			task: core.Task{DueType: core.DueBy, Due: time.Now().Add(24 * time.Hour)},
 			days: 0,
 			want: false,
 		},
 		{
 			name: "due day after tomorrow, want 5 days",
-			task: core.Task{DueBy: time.Now().Add(48 * time.Hour)},
+			task: core.Task{DueType: core.DueBy, Due: time.Now().Add(48 * time.Hour)},
 			days: 5,
 			want: true,
 		},
 		{
 			name: "overdue",
-			task: core.Task{DueBy: time.Now().Add(-24 * time.Hour)},
+			task: core.Task{DueType: core.DueBy, Due: time.Now().Add(-24 * time.Hour)},
 			days: 2,
 			want: true,
 		},
@@ -131,12 +131,12 @@ func TestDueOnToday(t *testing.T) {
 	}{
 		{
 			name: "due today",
-			task: core.Task{DueOn: time.Now()},
+			task: core.Task{DueType: core.DueOn, Due: time.Now()},
 			want: true,
 		},
 		{
 			name: "due tomorrow",
-			task: core.Task{DueOn: time.Now().Add(24 * time.Hour)},
+			task: core.Task{DueType: core.DueOn, Due: time.Now().Add(24 * time.Hour)},
 			want: false,
 		},
 		{
@@ -146,7 +146,7 @@ func TestDueOnToday(t *testing.T) {
 		},
 		{
 			name: "overdue",
-			task: core.Task{DueOn: time.Now().Add(-24 * time.Hour)},
+			task: core.Task{DueType: core.DueOn, Due: time.Now().Add(-24 * time.Hour)},
 			want: true,
 		},
 	}

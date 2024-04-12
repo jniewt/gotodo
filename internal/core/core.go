@@ -4,16 +4,16 @@ import (
 	"time"
 )
 
-type RGB struct {
-	R uint8
-	G uint8
-	B uint8
-}
-
 type List struct {
 	Name   string
 	Colour RGB
 	Items  []*Task
+}
+
+type RGB struct {
+	R uint8
+	G uint8
+	B uint8
 }
 
 type Task struct {
@@ -22,33 +22,46 @@ type Task struct {
 	List    string
 	Done    bool
 	AllDay  bool
-	DueBy   time.Time
-	DueOn   time.Time
+	DueType DueType
+	Due     time.Time
 	Created time.Time
 	DoneOn  time.Time
 }
 
-// IsOverdueOn returns true if the task is overdue based on the "due on" date.
-func (t Task) IsOverdueOn() bool {
-	return t.HasDueOn() && t.DueOn.Before(time.Now())
+// IsOverdue returns true if the task is overdue.
+func (t Task) IsOverdue() bool {
+	if !t.HasDueDate() {
+		return false
+	}
+	now := time.Now()
+	if t.AllDay {
+		today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+		return t.Due.Before(today)
+	}
+	return t.Due.Before(time.Now())
 }
 
-// IsOverdueBy returns true if the task is overdue based on the "due by" date.
-func (t Task) IsOverdueBy() bool {
-	return t.HasDueBy() && t.DueBy.Before(time.Now())
-}
-
-// HasDueDate returns true if the task has "due on" or "due by" date set.
+// HasDueDate returns true if the task has a due date set.
 func (t Task) HasDueDate() bool {
-	return t.HasDueOn() || t.HasDueBy()
+	return t.DueType != DueNone
 }
 
-// HasDueOn returns true if the task has a "due on" date set.
-func (t Task) HasDueOn() bool {
-	return !t.DueOn.IsZero()
+func (t Task) HasDueOnDate() bool {
+	return t.DueType == DueOn
 }
 
-// HasDueBy returns true if the task has a "due by" date set.
-func (t Task) HasDueBy() bool {
-	return !t.DueBy.IsZero()
+func (t Task) HasDueByDate() bool {
+	return t.DueType == DueBy
 }
+
+func (t Task) IsDone() bool {
+	return t.Done
+}
+
+type DueType string
+
+const (
+	DueOn   DueType = "due_on"
+	DueBy   DueType = "due_by"
+	DueNone DueType = ""
+)

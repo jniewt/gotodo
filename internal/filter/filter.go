@@ -233,13 +233,13 @@ func parseDueBy(op, value string) (FieldComparisonFunc, error) {
 			return nil, fmt.Errorf("invalid value for due_by: %s", value)
 		}
 		return func(task core.Task) bool {
-			return isWithinDays(task.DueBy, n, time.Now())
+			return isWithinDays(task.Due, n, time.Now())
 		}, nil
 	}
 
 	if op == string(OpUnset) {
 		return func(task core.Task) bool {
-			return !task.HasDueBy()
+			return !task.HasDueDate()
 		}, nil
 	}
 
@@ -251,31 +251,34 @@ func parseDueBy(op, value string) (FieldComparisonFunc, error) {
 	switch op {
 	case string(OpOnDay):
 		return func(task core.Task) bool {
-			return isOnDay(task.DueOn, 0, date)
+			if !task.HasDueByDate() {
+				return false
+			}
+			return isOnDay(task.Due, 0, date)
 		}, nil
 	case string(OpEq):
 		return func(task core.Task) bool {
-			return task.HasDueBy() && task.DueBy.Equal(date)
+			return task.HasDueByDate() && task.Due.Equal(date)
 		}, nil
 	case string(OpNeq):
 		return func(task core.Task) bool {
-			return !task.HasDueBy() || !task.DueBy.Equal(date)
+			return !task.HasDueByDate() || !task.Due.Equal(date)
 		}, nil
 	case string(OpGt):
 		return func(task core.Task) bool {
-			return task.HasDueBy() && task.DueBy.After(date)
+			return task.HasDueByDate() && task.Due.After(date)
 		}, nil
 	case string(OpGte):
 		return func(task core.Task) bool {
-			return task.HasDueBy() && !task.DueBy.Before(date)
+			return task.HasDueByDate() && !task.Due.Before(date)
 		}, nil
 	case string(OpLt):
 		return func(task core.Task) bool {
-			return task.HasDueBy() && task.DueBy.Before(date)
+			return task.HasDueByDate() && task.Due.Before(date)
 		}, nil
 	case string(OpLte):
 		return func(task core.Task) bool {
-			return task.HasDueBy() && !task.DueBy.After(date)
+			return task.HasDueByDate() && !task.Due.After(date)
 		}, nil
 	default:
 		return nil, fmt.Errorf("unknown operator for due_by: %s", op)
@@ -290,13 +293,13 @@ func parseDueOn(op, value string) (FieldComparisonFunc, error) {
 			return nil, fmt.Errorf("invalid value for due_on: %s", value)
 		}
 		return func(task core.Task) bool {
-			return isWithinDays(task.DueOn, n, time.Now())
+			return isWithinDays(task.Due, n, time.Now())
 		}, nil
 	}
 
 	if op == string(OpUnset) {
 		return func(task core.Task) bool {
-			return !task.HasDueOn()
+			return !task.HasDueDate()
 		}, nil
 	}
 
@@ -308,31 +311,31 @@ func parseDueOn(op, value string) (FieldComparisonFunc, error) {
 	switch op {
 	case string(OpOnDay):
 		return func(task core.Task) bool {
-			return isOnDay(task.DueOn, 0, date)
+			return isOnDay(task.Due, 0, date)
 		}, nil
 	case string(OpEq):
 		return func(task core.Task) bool {
-			return task.HasDueBy() && task.DueOn.Equal(date)
+			return task.HasDueOnDate() && task.Due.Equal(date)
 		}, nil
 	case string(OpNeq):
 		return func(task core.Task) bool {
-			return !task.HasDueBy() || !task.DueOn.Equal(date)
+			return !task.HasDueOnDate() || !task.Due.Equal(date)
 		}, nil
 	case string(OpGt):
 		return func(task core.Task) bool {
-			return task.HasDueBy() && task.DueOn.After(date)
+			return task.HasDueOnDate() && task.Due.After(date)
 		}, nil
 	case string(OpGte):
 		return func(task core.Task) bool {
-			return task.HasDueBy() && !task.DueOn.Before(date)
+			return task.HasDueOnDate() && !task.Due.Before(date)
 		}, nil
 	case string(OpLt):
 		return func(task core.Task) bool {
-			return task.HasDueOn() && task.DueOn.Before(date)
+			return task.HasDueOnDate() && task.Due.Before(date)
 		}, nil
 	case string(OpLte):
 		return func(task core.Task) bool {
-			return task.HasDueBy() && !task.DueOn.After(date)
+			return task.HasDueDate() && !task.Due.After(date)
 		}, nil
 	default:
 		return nil, fmt.Errorf("unknown operator for due_on: %s", op)
@@ -369,27 +372,27 @@ func parseDoneOn(op, value string) (FieldComparisonFunc, error) {
 	switch op {
 	case string(OpEq):
 		return func(task core.Task) bool {
-			return task.HasDueBy() && task.DoneOn.Equal(date)
+			return task.IsDone() && task.DoneOn.Equal(date)
 		}, nil
 	case string(OpNeq):
 		return func(task core.Task) bool {
-			return !task.HasDueBy() || !task.DoneOn.Equal(date)
+			return !task.IsDone() || !task.DoneOn.Equal(date)
 		}, nil
 	case string(OpGt):
 		return func(task core.Task) bool {
-			return task.HasDueBy() && task.DoneOn.After(date)
+			return task.IsDone() && task.DoneOn.After(date)
 		}, nil
 	case string(OpGte):
 		return func(task core.Task) bool {
-			return task.HasDueBy() && !task.DoneOn.Before(date)
+			return task.IsDone() && !task.DoneOn.Before(date)
 		}, nil
 	case string(OpLt):
 		return func(task core.Task) bool {
-			return task.HasDueBy() && task.DoneOn.Before(date)
+			return task.IsDone() && task.DoneOn.Before(date)
 		}, nil
 	case string(OpLte):
 		return func(task core.Task) bool {
-			return task.HasDueBy() && !task.DoneOn.After(date)
+			return task.IsDone() && !task.DoneOn.After(date)
 		}, nil
 	default:
 		return nil, fmt.Errorf("unknown operator for done_on: %s", op)

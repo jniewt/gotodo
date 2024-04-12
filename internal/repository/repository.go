@@ -169,9 +169,11 @@ func (r *Repository) AddItem(list string, task api.TaskAdd) (core.Task, error) {
 	case !task.DueBy.IsZero() && !task.DueOn.IsZero():
 		return core.Task{}, fmt.Errorf("only one of dueOn or dueBy can be set")
 	case !task.DueBy.IsZero():
-		item.DueBy = task.DueBy
+		item.DueType = core.DueBy
+		item.Due = task.DueBy
 	case !task.DueOn.IsZero():
-		item.DueOn = task.DueOn
+		item.DueType = core.DueOn
+		item.Due = task.DueOn
 	}
 
 	l.Items = append(l.Items, &item)
@@ -241,8 +243,13 @@ func (r *Repository) UpdateTask(id int, change api.TaskChange) (core.Task, error
 
 	t.Title = change.Title
 	t.AllDay = change.AllDay
-	t.DueBy = change.DueBy
-	t.DueOn = change.DueOn
+	if !change.DueBy.IsZero() {
+		t.DueType = core.DueBy
+		t.Due = change.DueBy
+	} else if !change.DueOn.IsZero() {
+		t.DueType = core.DueOn
+		t.Due = change.DueOn
+	}
 
 	list, err := r.getList(t.List)
 	if err != nil {

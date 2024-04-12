@@ -44,17 +44,21 @@ type TaskResponse struct {
 }
 
 func FromTask(t core.Task) TaskResponse {
-	return TaskResponse{
+	resp := TaskResponse{
 		ID:      t.ID,
 		Title:   t.Title,
 		List:    t.List,
 		Done:    t.Done,
 		AllDay:  t.AllDay,
-		DueBy:   t.DueBy,
-		DueOn:   t.DueOn,
 		Created: t.Created,
 		DoneOn:  t.DoneOn,
 	}
+	if t.DueType == core.DueBy {
+		resp.DueBy = t.Due
+	} else if t.DueType == core.DueOn {
+		resp.DueOn = t.Due
+	}
+	return resp
 }
 
 // MarshalJSON overwrites JSON marshalling to not send zero-value time fields
