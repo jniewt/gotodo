@@ -34,7 +34,8 @@ export class TaskUIManager {
         this.currentList = list;
         this.clearTasksDisplay();
         this.setListNameHeader(list.name);
-        applyListColour(list, this.dom.tasksDisplay);
+        const mainPanel = document.getElementById('mainPanel');
+        applyListColour(list, mainPanel);
 
         if (!tasks || tasks.length === 0) {
             this.showNoTasksMessage();
@@ -50,7 +51,8 @@ export class TaskUIManager {
     }
 
     setListNameHeader(listName) {
-        this.dom.tasksDisplay.innerHTML += `<h3>${listName}</h3>`;
+        const header = document.getElementById('listHeader');
+        header.textContent = listName;
     }
 
     showNoTasksMessage() {

@@ -12,32 +12,40 @@
 
 <body>
 <div id="alertPlaceholder"></div>
-<div class="container-fluid vh-100 d-flex flex-column">
-    <div class="row d-flex flex-grow-1">
+<div class="container-fluid p-0 d-flex h-100">
         <!-- Side pane for lists -->
-        <div class="col-md-3 bg-light border-right">
-            <h4 class="mt-2">Lists</h4>
-            <div id="listsDisplay" class="list-group list-group-flush list-group-item-action list-group-item-light"></div>
-            <hr>
-            <div id="addDisplay" class="list-group list-group-flush list-group-item-action list-group-item-light">
-                <a id="createListBtn" href="#" class="list-group-item list-group-item-action d-flex " data-bs-toggle="modal" data-bs-target="#addListModal">
-                    <i class="bi bi-plus-circle-fill me-2"></i> New List
-                </a>
-                <a id="createFilteredListBtn" href="#" class="list-group-item list-group-item-action d-flex"
-                   data-bs-toggle="tooltip" data-bs-placement="top" title="Not implemented yet">
-                    <i class="bi bi-filter-circle-fill me-2"></i> New Filtered List
-                </a>
+        <div tabindex="-1" id="sidebar" class="offcanvas-sm offcanvas-start w-auto hide">
+            <div class="offcanvas-body d-flex flex-column flex-shrink-0 p-3 ">
+                <h4 class="mt-2">Lists</h4>
+                <div id="listsDisplay" class="list-group list-group-flush list-group-item-action list-group-item-light"></div>
+                <hr>
+                <div id="addDisplay" class="list-group list-group-flush list-group-item-action list-group-item-light">
+                    <a id="createListBtn" href="#" class="list-group-item list-group-item-action d-flex " data-bs-toggle="modal" data-bs-target="#addListModal">
+                        <i class="bi bi-plus-circle-fill me-2"></i> New List
+                    </a>
+                    <a id="createFilteredListBtn" href="#" class="list-group-item list-group-item-action d-flex"
+                       data-bs-toggle="tooltip" data-bs-placement="top" title="Not implemented yet">
+                        <i class="bi bi-filter-circle-fill me-2"></i> New Filtered List
+                    </a>
+                </div>
+                <hr>
             </div>
-            <hr>
         </div>
+        <div id="mainPanel" class="flex-fill">
         <!-- Main pane for list details -->
-        <div class="col-md-9">
-            <div id="tasksDisplay" class="list-group list-group-flush list-group-item-action p-3">
-                Select a list to view items.
+            <div class="d-flex flex-row mt-3 align-items-center">
+                <a href="#" class="btn d-md-none" data-bs-toggle="offcanvas" data-bs-target="#sidebar">
+                    <i class="bi bi-list fs-1"></i>
+                </a>
+                <div id="headerContainer">
+                    <h3 class="mb-0" id="listHeader">Select a list</h3> <!-- Initial static header text -->
+                </div>
+            </div>
+            <div id="tasksDisplay" class="list-group list-group-flush list-group-item-action p-3 pt-0">
+                <p>Select a list to view items.</p>
             </div>
             <div id="addTaskButtonContainer" class="d-flex justify-content-end sticky-bottom"></div>
         </div>
-    </div>
 </div>
 
 <div id="taskContextMenu" class="custom-context-menu" style="display: none;">
