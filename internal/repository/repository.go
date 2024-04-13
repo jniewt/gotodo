@@ -157,13 +157,14 @@ func (r *Repository) AddItem(list string, task api.TaskAdd) (core.Task, error) {
 	}
 
 	item := core.Task{
-		ID:      r.newID(),
-		Title:   task.Title,
-		List:    list,
-		AllDay:  task.AllDay,
-		DueType: core.DueType(task.DueType),
-		Due:     task.Due,
-		Created: time.Now(),
+		ID:       r.newID(),
+		Title:    task.Title,
+		List:     list,
+		Priority: task.Priority,
+		AllDay:   task.AllDay,
+		DueType:  task.DueType,
+		Due:      task.Due,
+		Created:  time.Now(),
 	}
 
 	l.Items = append(l.Items, &item)
@@ -237,6 +238,7 @@ func (r *Repository) UpdateTask(id int, change api.TaskChange) (core.Task, error
 	}
 
 	t.Title = change.Title
+	t.Priority = change.Priority
 	t.AllDay = change.AllDay
 
 	list, err := r.getList(t.List)

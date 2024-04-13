@@ -12,6 +12,10 @@ export function sortByDone(a, b) {
     return a.done === b.done ? 0 : a.done ? 1 : -1;
 }
 
+export function sortByPriority(a, b) {
+    return b.priority - a.priority;
+}
+
 export function sortByDueDate(a, b) {
     let a_due = a.due;
     let b_due = b.due;

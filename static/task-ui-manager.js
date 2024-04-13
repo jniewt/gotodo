@@ -1,4 +1,4 @@
-import {sortByDone, sortByTitle, sortTasks, sortByDueDate} from './sort-tasks.js';
+import {sortByDone, sortByTitle, sortTasks, sortByPriority, sortByDueDate} from './sort-tasks.js';
 import {formatDate, formatDateForm, formatDateHuman} from "./format-date.js";
 
 export class TaskUIManager {
@@ -60,7 +60,7 @@ export class TaskUIManager {
     }
 
     displaySortedTasks(tasks, filtered=false) {
-        let sorted = sortTasks(tasks, [sortByDone, sortByDueDate, sortByTitle]);
+        let sorted = sortTasks(tasks, [sortByDone, sortByDueDate, sortByPriority, sortByTitle]);
         const taskList = document.createElement('ul');
         taskList.className = 'list-group';
         sorted.forEach(task => taskList.appendChild(this.createTaskElement(task, filtered)));
@@ -100,11 +100,40 @@ export class TaskUIManager {
 
         const contentContainer = document.createElement('div');
         contentContainer.className = 'd-flex align-items-center flex-grow-1';
-        contentContainer.append(checkbox, titleSpan);
+
+        contentContainer.append(checkbox)
+        // Show priority icon if task is not normal priority
+        if (task.priority !== 0) {
+            const priorityIcon = document.createElement('i');
+            let iconClass, iconColor;
+            switch (task.priority) {
+                case -2:
+                    iconClass = 'bi-chevron-double-down';
+                    iconColor = 'text-success';
+                    break;
+                case -1:
+                    iconClass = 'bi-chevron-down';
+                    iconColor = 'text-success-emphasis';
+                    break;
+                case 1:
+                    iconClass = 'bi-chevron-up';
+                    iconColor = 'text-warning';
+                    break;
+                case 2:
+                    iconClass = 'bi-chevron-double-up';
+                    iconColor = 'text-danger';
+                    break;
+            }
+            priorityIcon.className = `bi ${iconClass} ${iconColor} me-1`;
+
+            contentContainer.append(priorityIcon);
+        }
+        contentContainer.append(titleSpan)
+
         itemEl.append(contentContainer);
 
         // check if the task has a due date and add the due date icon and text
-        if (task.due_type !== "" || task.done) {
+        if (task.due_type === "due_by" || task.due_type === "due_on" || task.done) {
             const dueDateInfo = document.createElement('span');
             let dateText, iconClass, textStyle;
 
@@ -310,9 +339,11 @@ class AddTaskModal {
         const allDayCheckbox = document.getElementById('taskAllDayInput');
         const dueDateInput = document.getElementById('taskDueDate');
         const dueTimeInput = document.getElementById('taskDueTime');
+        const prioritySelect = document.getElementById('prioritySelect');
 
         const title = titleInput.value.trim();
         const listName = listDropdown.value;
+        const priority = prioritySelect.value;
         const dueDateType = dueDateTypeSelect.value;
         const isAllDay = allDayCheckbox.checked;
         const dueDate = dueDateInput.value;
@@ -323,6 +354,7 @@ class AddTaskModal {
         let requestPayload = {
             title: title,
             due_type: dueDateType,
+            priority: parseInt(priority,10),
         };
 
         if (dueDateType !== 'none') {
@@ -449,7 +481,9 @@ class TaskDetailsModal {
         const dueType = task.due_type;
         const allDay = task.all_day;
 
-        if (dueType !== "") {
+        document.getElementById('priorityEditSelect').value = task.priority;
+
+        if (dueType === "due_on" || dueType === "due_by") {
             document.getElementById('dateTimeEditOptions').classList.remove('d-none');
             // prefill the due type select
             document.getElementById('dueDateTypeEditSelect').value = dueType;
@@ -497,6 +531,7 @@ class TaskDetailsModal {
         const allDayCheckbox = document.getElementById('taskEditAllDayInput');
         const dueDateInput = document.getElementById('taskEditDueDate');
         const dueTimeInput = document.getElementById('taskEditDueTime');
+        const prioritySelect = document.getElementById('priorityEditSelect');
 
         const title = titleInput.value.trim();
         const dueDateType = dueDateTypeSelect.value;
@@ -505,9 +540,11 @@ class TaskDetailsModal {
         const dueTime = dueTimeInput.value;
         // Format a date string in the format 'YYYY-MM-DDTHH:MM:SS'
         const dueDateTime = isAllDay ? `${dueDate}` : `${dueDate}T${dueTime}`;
+        const priority = prioritySelect.value;
 
         let requestPayload = {
             title: title,
+            priority: parseInt(priority,10),
         };
 
         // Adjust payload based on the due date type selection

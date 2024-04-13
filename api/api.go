@@ -32,28 +32,30 @@ func FromList(l core.List) ListResponse {
 }
 
 type TaskResponse struct {
-	ID      int       `json:"id"`
-	Title   string    `json:"title"`
-	List    string    `json:"list"`
-	Done    bool      `json:"done"`
-	AllDay  bool      `json:"all_day"`
-	DueType string    `json:"due_type"`
-	Due     time.Time `json:"due,omitempty"`
-	Created time.Time `json:"created"`
-	DoneOn  time.Time `json:"done_on,omitempty"`
+	ID       int       `json:"id"`
+	Title    string    `json:"title"`
+	List     string    `json:"list"`
+	Done     bool      `json:"done"`
+	Priority int       `json:"priority"`
+	AllDay   bool      `json:"all_day"`
+	DueType  string    `json:"due_type"`
+	Due      time.Time `json:"due,omitempty"`
+	Created  time.Time `json:"created"`
+	DoneOn   time.Time `json:"done_on,omitempty"`
 }
 
 func FromTask(t core.Task) TaskResponse {
 	resp := TaskResponse{
-		ID:      t.ID,
-		Title:   t.Title,
-		List:    t.List,
-		Done:    t.Done,
-		DueType: string(t.DueType),
-		Due:     t.Due,
-		AllDay:  t.AllDay,
-		Created: t.Created,
-		DoneOn:  t.DoneOn,
+		ID:       t.ID,
+		Title:    t.Title,
+		List:     t.List,
+		Done:     t.Done,
+		Priority: t.Priority,
+		DueType:  string(t.DueType),
+		Due:      t.Due,
+		AllDay:   t.AllDay,
+		Created:  t.Created,
+		DoneOn:   t.DoneOn,
 	}
 	return resp
 }
@@ -93,10 +95,11 @@ type RGB struct {
 }
 
 type TaskAdd struct {
-	Title   string       `json:"title"`
-	AllDay  bool         `json:"all_day"`
-	DueType core.DueType `json:"due_type"`
-	Due     time.Time    `json:"due"`
+	Title    string       `json:"title"`
+	Priority int          `json:"priority"`
+	AllDay   bool         `json:"all_day"`
+	DueType  core.DueType `json:"due_type"`
+	Due      time.Time    `json:"due"`
 }
 
 // UnmarshalJSON overwrites JSON unmarshalling to parse time fields properly
@@ -116,7 +119,7 @@ func (t *TaskAdd) UnmarshalJSON(data []byte) error {
 	if aux.AllDay {
 		format = "2006-01-02"
 	}
-	if string(aux.DueType) != "none" || aux.DueType != core.DueNone {
+	if string(aux.DueType) != "none" && aux.DueType != core.DueNone {
 		due, err := time.ParseInLocation(format, aux.Due, time.Local)
 		if err != nil {
 			return err
@@ -130,10 +133,11 @@ func (t *TaskAdd) UnmarshalJSON(data []byte) error {
 // DueType must be set to one of TypeDueOn, TypeDueBy or TypeDueNone in requests to change the due date, otherwise
 // the due date supplied in the request will be ignored.
 type TaskChange struct {
-	Title  string `json:"title"`
-	List   string `json:"list"`
-	Done   bool   `json:"done"`
-	AllDay bool   `json:"all_day"`
+	Title    string `json:"title"`
+	List     string `json:"list"`
+	Done     bool   `json:"done"`
+	Priority int    `json:"priority"`
+	AllDay   bool   `json:"all_day"`
 
 	// DueType must be set to one of TypeDueOn, TypeDueBy or TypeDueNone in requests to change the due date.
 	DueType core.DueType `json:"due_type"`
@@ -146,6 +150,9 @@ func (t *TaskChange) Validate() error {
 	}
 	if t.List == "" {
 		return fmt.Errorf("missing list name")
+	}
+	if t.Priority < core.PrioLowest || t.Priority > core.PrioHighest {
+		return fmt.Errorf("priority outside of bounds")
 	}
 
 	return nil
@@ -161,19 +168,39 @@ func (t *TaskChange) UnmarshalJSON(data []byte) error {
 	}
 
 	if title, ok := input["title"]; ok {
-		t.Title = title.(string)
+		t.Title, ok = title.(string)
+		if !ok {
+			return fmt.Errorf("title must be a string")
+		}
 	}
 
 	if list, ok := input["list"]; ok {
-		t.List = list.(string)
+		t.List, ok = list.(string)
+		if !ok {
+			return fmt.Errorf("list must be a string")
+		}
 	}
 
 	if done, ok := input["done"]; ok {
-		t.Done = done.(bool)
+		t.Done, ok = done.(bool)
+		if !ok {
+			return fmt.Errorf("done must be a boolean")
+		}
+	}
+
+	if priority, ok := input["priority"]; ok {
+		prioFloat, ok := priority.(float64)
+		if !ok {
+			return fmt.Errorf("priority must be an integer")
+		}
+		t.Priority = int(prioFloat)
 	}
 
 	if allDay, ok := input["all_day"]; ok {
-		t.AllDay = allDay.(bool)
+		t.AllDay, ok = allDay.(bool)
+		if !ok {
+			return fmt.Errorf("all_day must be a boolean")
+		}
 	}
 
 	// due_type must be set on all requests to change the due date
