@@ -32,28 +32,30 @@ func FromList(l core.List) ListResponse {
 }
 
 type TaskResponse struct {
-	ID      int       `json:"id"`
-	Title   string    `json:"title"`
-	List    string    `json:"list"`
-	Done    bool      `json:"done"`
-	AllDay  bool      `json:"all_day"`
-	DueType string    `json:"due_type"`
-	Due     time.Time `json:"due,omitempty"`
-	Created time.Time `json:"created"`
-	DoneOn  time.Time `json:"done_on,omitempty"`
+	ID       int       `json:"id"`
+	Title    string    `json:"title"`
+	List     string    `json:"list"`
+	Done     bool      `json:"done"`
+	Priority int       `json:"priority"`
+	AllDay   bool      `json:"all_day"`
+	DueType  string    `json:"due_type"`
+	Due      time.Time `json:"due,omitempty"`
+	Created  time.Time `json:"created"`
+	DoneOn   time.Time `json:"done_on,omitempty"`
 }
 
 func FromTask(t core.Task) TaskResponse {
 	resp := TaskResponse{
-		ID:      t.ID,
-		Title:   t.Title,
-		List:    t.List,
-		Done:    t.Done,
-		DueType: string(t.DueType),
-		Due:     t.Due,
-		AllDay:  t.AllDay,
-		Created: t.Created,
-		DoneOn:  t.DoneOn,
+		ID:       t.ID,
+		Title:    t.Title,
+		List:     t.List,
+		Done:     t.Done,
+		Priority: t.Priority,
+		DueType:  string(t.DueType),
+		Due:      t.Due,
+		AllDay:   t.AllDay,
+		Created:  t.Created,
+		DoneOn:   t.DoneOn,
 	}
 	return resp
 }
@@ -93,10 +95,11 @@ type RGB struct {
 }
 
 type TaskAdd struct {
-	Title   string       `json:"title"`
-	AllDay  bool         `json:"all_day"`
-	DueType core.DueType `json:"due_type"`
-	Due     time.Time    `json:"due"`
+	Title    string       `json:"title"`
+	Priority int          `json:"priority"`
+	AllDay   bool         `json:"all_day"`
+	DueType  core.DueType `json:"due_type"`
+	Due      time.Time    `json:"due"`
 }
 
 // UnmarshalJSON overwrites JSON unmarshalling to parse time fields properly
@@ -130,10 +133,11 @@ func (t *TaskAdd) UnmarshalJSON(data []byte) error {
 // DueType must be set to one of TypeDueOn, TypeDueBy or TypeDueNone in requests to change the due date, otherwise
 // the due date supplied in the request will be ignored.
 type TaskChange struct {
-	Title  string `json:"title"`
-	List   string `json:"list"`
-	Done   bool   `json:"done"`
-	AllDay bool   `json:"all_day"`
+	Title    string `json:"title"`
+	List     string `json:"list"`
+	Done     bool   `json:"done"`
+	Priority int    `json:"priority"`
+	AllDay   bool   `json:"all_day"`
 
 	// DueType must be set to one of TypeDueOn, TypeDueBy or TypeDueNone in requests to change the due date.
 	DueType core.DueType `json:"due_type"`
@@ -170,6 +174,10 @@ func (t *TaskChange) UnmarshalJSON(data []byte) error {
 
 	if done, ok := input["done"]; ok {
 		t.Done = done.(bool)
+	}
+
+	if priority, ok := input["priority"]; ok {
+		t.Priority = priority.(int)
 	}
 
 	if allDay, ok := input["all_day"]; ok {

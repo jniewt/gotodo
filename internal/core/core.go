@@ -17,15 +17,16 @@ type RGB struct {
 }
 
 type Task struct {
-	ID      int
-	Title   string
-	List    string
-	Done    bool
-	AllDay  bool
-	DueType DueType
-	Due     time.Time
-	Created time.Time
-	DoneOn  time.Time
+	ID       int
+	Title    string
+	List     string
+	Done     bool
+	Priority int
+	AllDay   bool
+	DueType  DueType
+	Due      time.Time
+	Created  time.Time
+	DoneOn   time.Time
 }
 
 // IsOverdue returns true if the task is overdue. A task is overdue if it is not done and the due date is in the past.
@@ -67,4 +68,13 @@ const (
 	DueOn   DueType = "due_on"
 	DueBy   DueType = "due_by"
 	DueNone DueType = ""
+)
+
+// Priorities
+const (
+	PrioLowest  = -2
+	PrioLow     = -1
+	PrioNormal  = 0
+	PrioHigh    = 1
+	PrioHighest = 2
 )
