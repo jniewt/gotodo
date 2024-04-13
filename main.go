@@ -112,15 +112,22 @@ func addTestData(repo *repository.Repository) {
 
 	// create filtered list that contains all undone tasks from all lists that are either due on today, due by in the
 	// next n days or have no due date
-	soonFilters := []filter.Node{
-		filter.PendingOrDoneToday(),
-		filter.Due(
-			filter.DueOnToday(),
-			filter.DueByInDays(14),
-			filter.NoDueDate(),
-		),
+	overdue, _ := filter.NewRule("overdue", "true")
+	pending, _ := filter.NewRule("done", "false")
+	doneToday, _ := filter.NewRule("done_on", "0")
+	dueOnToday, _ := filter.NewRule("due_on", "0")
+	dueBy7Days, _ := filter.NewRule("due_by", "7")
+	noDueDate, _ := filter.NewRule("due_none", "")
+	soonFilter := filter.Filter{
+		RuleSets: []filter.RuleSet{
+			{Rules: []filter.Rule{pending, dueOnToday}},
+			{Rules: []filter.Rule{pending, dueBy7Days}},
+			{Rules: []filter.Rule{pending, noDueDate}},
+			{Rules: []filter.Rule{overdue}},
+			{Rules: []filter.Rule{doneToday}},
+		},
 	}
-	_, err = repo.AddFilteredList("Soon", soonFilters...)
+	_, err = repo.AddFilteredList("Soon", soonFilter)
 	if err != nil {
 		panic(err)
 	}

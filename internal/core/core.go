@@ -28,8 +28,11 @@ type Task struct {
 	DoneOn  time.Time
 }
 
-// IsOverdue returns true if the task is overdue.
+// IsOverdue returns true if the task is overdue. A task is overdue if it is not done and the due date is in the past.
 func (t Task) IsOverdue() bool {
+	if t.Done {
+		return false
+	}
 	if !t.HasDueDate() {
 		return false
 	}

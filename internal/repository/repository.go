@@ -116,13 +116,13 @@ func (r *Repository) DelList(name string) error {
 }
 
 // AddFilteredList adds a new virtual list.
-func (r *Repository) AddFilteredList(name string, filters ...filter.Node) (filter.List, error) {
+func (r *Repository) AddFilteredList(name string, f filter.Filter) (filter.List, error) {
 	for _, l := range r.filtered {
 		if l.Name == name {
 			return filter.List{}, ErrListExists
 		}
 	}
-	fl := &filter.List{Name: name, Filter: filter.NewFilter(filters...)}
+	fl := &filter.List{Name: name, Filter: f}
 	err := r.store.AddFiltered(fl)
 	if err != nil {
 		return filter.List{}, err
@@ -345,7 +345,7 @@ func (r *Repository) newID() int {
 	return id + 1
 }
 
-func (r *Repository) filterTasks(f filter.Node) []*core.Task {
+func (r *Repository) filterTasks(f filter.Filter) []*core.Task {
 	tasks := make([]*core.Task, 0)
 	for _, list := range r.lists {
 		for _, task := range list.Items {
