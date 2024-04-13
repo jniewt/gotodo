@@ -1,4 +1,4 @@
-import {sortByDone, sortByTitle, sortTasks, sortByDueDate} from './sort-tasks.js';
+import {sortByDone, sortByTitle, sortTasks, sortByPriority, sortByDueDate} from './sort-tasks.js';
 import {formatDate, formatDateForm, formatDateHuman} from "./format-date.js";
 
 export class TaskUIManager {
@@ -60,7 +60,7 @@ export class TaskUIManager {
     }
 
     displaySortedTasks(tasks, filtered=false) {
-        let sorted = sortTasks(tasks, [sortByDone, sortByDueDate, sortByTitle]);
+        let sorted = sortTasks(tasks, [sortByDone, sortByDueDate, sortByPriority, sortByTitle]);
         const taskList = document.createElement('ul');
         taskList.className = 'list-group';
         sorted.forEach(task => taskList.appendChild(this.createTaskElement(task, filtered)));
@@ -100,7 +100,36 @@ export class TaskUIManager {
 
         const contentContainer = document.createElement('div');
         contentContainer.className = 'd-flex align-items-center flex-grow-1';
-        contentContainer.append(checkbox, titleSpan);
+
+        contentContainer.append(checkbox)
+        // Show priority icon if task is not normal priority
+        if (task.priority !== 0) {
+            const priorityIcon = document.createElement('i');
+            let iconClass, iconColor;
+            switch (task.priority) {
+                case -2:
+                    iconClass = 'bi-chevron-double-down';
+                    iconColor = 'text-success';
+                    break;
+                case -1:
+                    iconClass = 'bi-chevron-down';
+                    iconColor = 'text-success-emphasis';
+                    break;
+                case 1:
+                    iconClass = 'bi-chevron-up';
+                    iconColor = 'text-warning';
+                    break;
+                case 2:
+                    iconClass = 'bi-chevron-double-up';
+                    iconColor = 'text-danger';
+                    break;
+            }
+            priorityIcon.className = `bi ${iconClass} ${iconColor} me-1`;
+
+            contentContainer.append(priorityIcon);
+        }
+        contentContainer.append(titleSpan)
+
         itemEl.append(contentContainer);
 
         // check if the task has a due date and add the due date icon and text

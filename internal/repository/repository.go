@@ -157,13 +157,14 @@ func (r *Repository) AddItem(list string, task api.TaskAdd) (core.Task, error) {
 	}
 
 	item := core.Task{
-		ID:      r.newID(),
-		Title:   task.Title,
-		List:    list,
-		AllDay:  task.AllDay,
-		DueType: core.DueType(task.DueType),
-		Due:     task.Due,
-		Created: time.Now(),
+		ID:       r.newID(),
+		Title:    task.Title,
+		List:     list,
+		Priority: task.Priority,
+		AllDay:   task.AllDay,
+		DueType:  task.DueType,
+		Due:      task.Due,
+		Created:  time.Now(),
 	}
 
 	l.Items = append(l.Items, &item)
