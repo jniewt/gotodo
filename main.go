@@ -95,6 +95,7 @@ func addTestData(repo *repository.Repository) {
 		{Title: "Write report"},
 		{Title: "Prepare presentation", AllDay: true, DueType: core.DueBy, Due: timeAtHourInDays(0, 5)},
 		{Title: "Call client", DueType: core.DueBy, Due: timeAtHourInDays(9, 3)},
+		{Title: "Write an email", DueType: core.DueOn, AllDay: true, Due: today()},
 	}
 
 	_, err = repo.AddList("Work", core.RGB{R: 0, G: 0, B: 255})

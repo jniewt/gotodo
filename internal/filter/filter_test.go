@@ -135,6 +135,11 @@ func TestDueOnToday(t *testing.T) {
 			want: true,
 		},
 		{
+			name: "due today all day",
+			task: core.Task{DueType: core.DueOn, AllDay: true, Due: time.Now()},
+			want: true,
+		},
+		{
 			name: "due tomorrow",
 			task: core.Task{DueType: core.DueOn, Due: time.Now().Add(24 * time.Hour)},
 			want: false,
