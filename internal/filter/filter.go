@@ -106,6 +106,17 @@ func newComparison(field, value string) (comparisonFunc, error) {
 		return func(task core.Task) bool {
 			return task.IsOverdue() == (value == "true")
 		}, nil
+	case "prio_min": // value is integer, means this priority or higher
+		priority, err := strconv.Atoi(value)
+		if err != nil {
+			return nil, fmt.Errorf("invalid value for prio_min: %s", value)
+		}
+		if priority < core.PrioLowest || priority > core.PrioHighest {
+			return nil, fmt.Errorf("priority outside of allowed values: %d", priority)
+		}
+		return func(task core.Task) bool {
+			return task.Priority >= priority
+		}, nil
 	}
 
 	return nil, fmt.Errorf("invalid field: %s", field)
