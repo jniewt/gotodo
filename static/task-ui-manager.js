@@ -133,7 +133,7 @@ export class TaskUIManager {
         itemEl.append(contentContainer);
 
         // check if the task has a due date and add the due date icon and text
-        if (task.due_type !== "" || task.done) {
+        if (task.due_type === "due_by" || task.due_type === "due_on" || task.done) {
             const dueDateInfo = document.createElement('span');
             let dateText, iconClass, textStyle;
 
@@ -339,9 +339,11 @@ class AddTaskModal {
         const allDayCheckbox = document.getElementById('taskAllDayInput');
         const dueDateInput = document.getElementById('taskDueDate');
         const dueTimeInput = document.getElementById('taskDueTime');
+        const prioritySelect = document.getElementById('prioritySelect');
 
         const title = titleInput.value.trim();
         const listName = listDropdown.value;
+        const priority = prioritySelect.value;
         const dueDateType = dueDateTypeSelect.value;
         const isAllDay = allDayCheckbox.checked;
         const dueDate = dueDateInput.value;
@@ -352,6 +354,7 @@ class AddTaskModal {
         let requestPayload = {
             title: title,
             due_type: dueDateType,
+            priority: parseInt(priority,10),
         };
 
         if (dueDateType !== 'none') {
@@ -478,7 +481,9 @@ class TaskDetailsModal {
         const dueType = task.due_type;
         const allDay = task.all_day;
 
-        if (dueType !== "") {
+        document.getElementById('priorityEditSelect').value = task.priority;
+
+        if (dueType === "due_on" || dueType === "due_by") {
             document.getElementById('dateTimeEditOptions').classList.remove('d-none');
             // prefill the due type select
             document.getElementById('dueDateTypeEditSelect').value = dueType;
@@ -526,6 +531,7 @@ class TaskDetailsModal {
         const allDayCheckbox = document.getElementById('taskEditAllDayInput');
         const dueDateInput = document.getElementById('taskEditDueDate');
         const dueTimeInput = document.getElementById('taskEditDueTime');
+        const prioritySelect = document.getElementById('priorityEditSelect');
 
         const title = titleInput.value.trim();
         const dueDateType = dueDateTypeSelect.value;
@@ -534,9 +540,11 @@ class TaskDetailsModal {
         const dueTime = dueTimeInput.value;
         // Format a date string in the format 'YYYY-MM-DDTHH:MM:SS'
         const dueDateTime = isAllDay ? `${dueDate}` : `${dueDate}T${dueTime}`;
+        const priority = prioritySelect.value;
 
         let requestPayload = {
             title: title,
+            priority: parseInt(priority,10),
         };
 
         // Adjust payload based on the due date type selection

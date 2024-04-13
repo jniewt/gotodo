@@ -119,7 +119,7 @@ func (t *TaskAdd) UnmarshalJSON(data []byte) error {
 	if aux.AllDay {
 		format = "2006-01-02"
 	}
-	if string(aux.DueType) != "none" || aux.DueType != core.DueNone {
+	if string(aux.DueType) != "none" && aux.DueType != core.DueNone {
 		due, err := time.ParseInLocation(format, aux.Due, time.Local)
 		if err != nil {
 			return err
@@ -151,6 +151,9 @@ func (t *TaskChange) Validate() error {
 	if t.List == "" {
 		return fmt.Errorf("missing list name")
 	}
+	if t.Priority < core.PrioLowest || t.Priority > core.PrioHighest {
+		return fmt.Errorf("priority outside of bounds")
+	}
 
 	return nil
 }
@@ -165,23 +168,39 @@ func (t *TaskChange) UnmarshalJSON(data []byte) error {
 	}
 
 	if title, ok := input["title"]; ok {
-		t.Title = title.(string)
+		t.Title, ok = title.(string)
+		if !ok {
+			return fmt.Errorf("title must be a string")
+		}
 	}
 
 	if list, ok := input["list"]; ok {
-		t.List = list.(string)
+		t.List, ok = list.(string)
+		if !ok {
+			return fmt.Errorf("list must be a string")
+		}
 	}
 
 	if done, ok := input["done"]; ok {
-		t.Done = done.(bool)
+		t.Done, ok = done.(bool)
+		if !ok {
+			return fmt.Errorf("done must be a boolean")
+		}
 	}
 
 	if priority, ok := input["priority"]; ok {
-		t.Priority = priority.(int)
+		prioFloat, ok := priority.(float64)
+		if !ok {
+			return fmt.Errorf("priority must be an integer")
+		}
+		t.Priority = int(prioFloat)
 	}
 
 	if allDay, ok := input["all_day"]; ok {
-		t.AllDay = allDay.(bool)
+		t.AllDay, ok = allDay.(bool)
+		if !ok {
+			return fmt.Errorf("all_day must be a boolean")
+		}
 	}
 
 	// due_type must be set on all requests to change the due date

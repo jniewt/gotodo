@@ -238,6 +238,7 @@ func (r *Repository) UpdateTask(id int, change api.TaskChange) (core.Task, error
 	}
 
 	t.Title = change.Title
+	t.Priority = change.Priority
 	t.AllDay = change.AllDay
 
 	list, err := r.getList(t.List)
