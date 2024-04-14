@@ -159,7 +159,8 @@ export class TaskUIManager {
         <span style="display: inline-block; width: 100px; ${textStyle}">${dateText}</span>
     `;
             // Adjusted font size for the entire dueDateInfo, including the icon and text
-            dueDateInfo.style.fontSize = '0.75rem';
+            dueDateInfo.style.fontSize = '0.55rem';
+            dueDateInfo.classList.add('align-self-end');
 
             const wrapper = document.createElement('div');
             wrapper.className = 'd-flex justify-content-between align-items-center flex-grow-1';
