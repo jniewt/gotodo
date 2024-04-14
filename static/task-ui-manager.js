@@ -272,7 +272,8 @@ class AddTaskModal {
         dropdown.innerHTML = ''; // Clear existing options
         const lists = this.listManager.lists;
         lists.forEach(list => {
-            const option = new Option(list.name, list.name, list.name === this.currentList.name, list.name === this.currentList.name);
+            const isSelected = this.currentList && list.name === this.currentList.name;
+            const option = new Option(list.name, list.name, isSelected, isSelected);
             dropdown.add(option);
         });
     }
@@ -392,8 +393,9 @@ class AddTaskModal {
         alertBox.textContent = ''; // Clear the error message
         const modalElement = new bootstrap.Modal(document.getElementById(this.modalId));
         // by default choose the Due On option
-        // Get the select element
-        var selectElement = document.getElementById('dueDateTypeSelect');
+
+        // Apply default due date setting
+        let selectElement = document.getElementById('dueDateTypeSelect');
         applyDefaultDueDate(selectElement);
 
         modalElement.show();
