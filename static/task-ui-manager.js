@@ -156,7 +156,7 @@ export class TaskUIManager {
 
             dueDateInfo.innerHTML = `
         <i class="bi ${iconClass} me-2" style="font-size: 0.75rem; margin-right: 4px;"></i>
-        <span style="display: inline-block; width: 100px; ${textStyle}">${dateText}</span>
+        <span style="display: inline-block; width: 70px; ${textStyle}">${dateText}</span>
     `;
             // Adjusted font size for the entire dueDateInfo, including the icon and text
             dueDateInfo.style.fontSize = '0.55rem';
