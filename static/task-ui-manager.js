@@ -367,7 +367,9 @@ class AddTaskModal {
             console.log('Adding task to list:', listName, requestPayload)
             await this.listManager.createTask(listName, requestPayload);
             this.hide(); // Hide the modal
-            this.onTaskAdded(this.listManager.listByName(listName)); // Trigger the callback on added task
+            // If current list is filtered, update it, otherwise show the target list
+            let targetList = this.currentList && this.currentList.filtered ? this.currentList : this.listManager.listByName(listName);
+            this.onTaskAdded(targetList); // Trigger the callback on added task
             this.showAlertOutside('Task added', 'success');
         } catch (error) {
             // TODO doesn't make sense since the alert appears behind the modal, either close the modal or show the alert in the modal
