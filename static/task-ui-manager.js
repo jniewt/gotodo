@@ -110,6 +110,7 @@ export class TaskUIManager {
                 case -2:
                     iconClass = 'bi-chevron-double-down';
                     iconColor = 'text-success';
+                    titleSpan.classList.add('fw-lighter')
                     break;
                 case -1:
                     iconClass = 'bi-chevron-down';
@@ -118,10 +119,12 @@ export class TaskUIManager {
                 case 1:
                     iconClass = 'bi-chevron-up';
                     iconColor = 'text-warning';
+                    titleSpan.classList.add('fw-medium')
                     break;
                 case 2:
                     iconClass = 'bi-chevron-double-up';
                     iconColor = 'text-danger';
+                    titleSpan.classList.add('fw-semibold')
                     break;
             }
             priorityIcon.className = `bi ${iconClass} ${iconColor} me-1`;
