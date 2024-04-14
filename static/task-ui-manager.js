@@ -239,7 +239,7 @@ export class TaskUIManager {
     initAddTaskButton() {
         const addTaskButton = document.createElement('button');
         addTaskButton.textContent = '+';
-        addTaskButton.className = 'btn btn-primary rounded-circle';
+        addTaskButton.className = 'btn btn-warning rounded-circle btn-lg m-2 mt-0';
         addTaskButton.setAttribute('title', 'Add Task'); // Tooltip text
         addTaskButton.setAttribute('data-bs-toggle', 'tooltip'); // Bootstrap tooltip
         addTaskButton.setAttribute('data-bs-placement', 'bottom'); // Tooltip position
