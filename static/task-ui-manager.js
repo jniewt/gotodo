@@ -390,8 +390,12 @@ class AddTaskModal {
         const alertBox = document.getElementById('formErrorAlert');
         alertBox.classList.add('d-none');
         alertBox.textContent = ''; // Clear the error message
-        // this.populateListDropdown().then(r => {}); // Ensure the dropdown is up-to-date
         const modalElement = new bootstrap.Modal(document.getElementById(this.modalId));
+        // by default choose the Due On option
+        // Get the select element
+        var selectElement = document.getElementById('dueDateTypeSelect');
+        applyDefaultDueDate(selectElement);
+
         modalElement.show();
     }
 
@@ -406,6 +410,17 @@ class AddTaskModal {
         alertBox.classList.remove('d-none'); // Show the alert box
         alertBox.classList.add(`alert-${type}`); // Use the 'type' to add specific styling, e.g., 'alert-danger' for errors
     }
+}
+
+function applyDefaultDueDate(selectElement) {
+    // Change the value
+    selectElement.value = 'due_on';
+    let event = new Event('change', {
+        'bubbles': true,    // Enable event bubbling
+        'cancelable': true  // Event can be cancelled
+    });
+    // Dispatch the event
+    selectElement.dispatchEvent(event);
 }
 
 class TaskDetailsModal {
