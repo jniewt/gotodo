@@ -2,6 +2,7 @@ import {TaskUIManager} from './task-ui-manager.js';
 
 export class UIManager {
     constructor(listManager) {
+        this.defaultListName = 'Soon';
         this.listManager = listManager;
         this.addListModal = new AddListModal(this.listManager, this.onListCreateAttempt.bind(this));
         this.editListModal = new EditListModal(this.listManager, this.onListEditAttempt.bind(this));
@@ -41,6 +42,18 @@ export class UIManager {
 
 
         combinedLists.forEach(list => this.createListElement(list));
+    }
+
+    displayDefaultList() {
+        const defaultList = this.listManager.listByName(this.defaultListName) || this.listManager.filteredListByName(this.defaultListName);
+        if (defaultList === null) {
+            return;
+        }
+        this.listManager.getTasks(defaultList.name).then((tasks) => {
+            this.taskManager.displayTasks(defaultList, tasks);
+        }).catch((error) => {
+            this.showAlert(`Failed to fetch tasks for default list: ${error.message}`);
+        });
     }
 
     // Create a list element

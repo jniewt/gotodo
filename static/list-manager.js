@@ -105,4 +105,7 @@ export class ListManager {
     listByName(name) {
         return this.#lists.find(list => list.name === name);
     }
+    filteredListByName(name) {
+        return this.#filteredLists.find(list => list.name === name);
+    }
 }

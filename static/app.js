@@ -10,4 +10,5 @@ document.addEventListener('DOMContentLoaded', async () => {
     await listManager.initLists();
     const uiManager = new UIManager(listManager);
     uiManager.displayLists();
+    uiManager.displayDefaultList();
 });
